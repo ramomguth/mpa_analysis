@@ -452,7 +452,7 @@ def get_mpa_data(request):
         longest_path = []
         max_length = 0
         visited = [False] * g.vcount()
-
+        #teste GSOSFO
         for v in range(g.vcount()):
             path, length = longest_path_dfs(g, v, visited, [], 0, longest_path, max_length)
             if length > max_length:
