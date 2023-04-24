@@ -414,7 +414,7 @@ def get_mpa_data(request):
         g.add_edges(comb)
         g.vs["label"] = g.vs["name"]
    
-
+        """
         # define the start and end vertices, and the specific edge to include
         sinks = [v.index for v in g.vs if g.outdegree(v.index) == 0]
         primary_sources = [v.index for v in g.vs if g.indegree(v.index) == 0]
@@ -444,28 +444,42 @@ def get_mpa_data(request):
                     
             g.es[index]["SPLC"] = len(paths_with_edge)
             
-
+        """
+        splc(g)
         #ig.plot(g, vertex_label=l.vs["label"], target="l.svg")
         ig.plot(g, layout="kk", edge_label=g.es["SPLC"], target="g.svg")
         
         # Calculate the longest path considering 'SPLC' attribute
         longest_path = []
         max_length = 0
+        longest_edge_path = []
+
         visited = [False] * g.vcount()
-        #teste GSOSFO
-        for v in range(g.vcount()):
+
+        """for v in range(g.vcount()):
             path, length = longest_path_dfs(g, v, visited, [], 0, longest_path, max_length)
             if length > max_length:
                 longest_path = path
+                max_length = length"""
+
+        for v in range(g.vcount()):
+            path, edge_path, length = longest_path_dfs(g, v, visited, [], [], 0, longest_path, longest_edge_path, max_length)
+            if length > max_length:
+                longest_path = path
+                longest_edge_path = edge_path
                 max_length = length
 
+        main_path = g.subgraph_edges(longest_edge_path)
         print("Longest path:", longest_path)
-        print("Longest path length:", max_length)
-        
+        print("edge:", longest_edge_path)
+        #print("Longest path length:", max_length)
+        print (main_path)
+        ig.plot(main_path, layout="kk", edge_label=main_path.es["SPLC"], target="main_path.svg")
+
         return HttpResponse("ok")
 
 
-def longest_path_dfs(graph, vertex, visited, path, path_length, max_path, max_length):
+"""def longest_path_dfs(graph, vertex, visited, path, path_length, max_path, max_length):
     visited[vertex] = True
     path.append(vertex)
 
@@ -485,8 +499,32 @@ def longest_path_dfs(graph, vertex, visited, path, path_length, max_path, max_le
     path.pop()
     visited[vertex] = False
 
-    return max_path, max_length
+    return max_path, max_length"""
 
+def longest_path_dfs(graph, vertex, visited, path, edge_path, path_length, max_path, max_edge_path, max_length):
+    visited[vertex] = True
+    path.append(vertex)
+
+    for neighbor in graph.neighbors(vertex, mode=ig.OUT):
+        edge = graph.get_eid(vertex, neighbor, directed=True, error=False)
+        if edge != -1:
+            edge_splc = graph.es[edge]['SPLC']
+            if not visited[neighbor]:
+                path_length += edge_splc
+                edge_path.append(edge)
+                max_path, max_edge_path, max_length = longest_path_dfs(graph, neighbor, visited, path, edge_path, path_length, max_path, max_edge_path, max_length)
+                path_length -= edge_splc
+                edge_path.pop()
+
+    if path_length > max_length:
+        max_path = list(path)
+        max_edge_path = list(edge_path)
+        max_length = path_length
+
+    path.pop()
+    visited[vertex] = False
+
+    return max_path, max_edge_path, max_length
 
 def spc(g):
         sinks = [v.index for v in g.vs if g.outdegree(v.index) == 0]
@@ -533,6 +571,7 @@ def splc(g):
                 all_paths.extend(paths)
             #all_paths = g.get_all_simple_paths(g.vs.find(0), g.vs.find(name=end_vertex).index, mode="out")                
             #print("todos caminhos", all_paths)  
+        
         paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
         #print("caminhos com o escolhido = ",len(paths_with_edge))            
         g.es[index]["SPLC"] = len(paths_with_edge)
