@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from neo4j import GraphDatabase
-import networkx as nx
+#import networkx as nx
 import igraph as ig
 from igraph import Graph
 import numpy as np
@@ -15,24 +15,36 @@ import pandas as pd
 import json, uuid
 import itertools
 from .scraper_sbc import *
-import requests 
+#import requests 
+import traceback
 
 # Create your views here.
 def index(request):
-    if request.user.is_authenticated:
+    if (not request.user.is_authenticated):
+        return redirect('login_user')
+    else:
         try:
             driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
             with driver.session() as session: 
                 q = f"""MATCH (p:Project{{user_id:"{request.session['user_id']}"}}) return p.name, p.descricao"""       #mostra a lista de projetos para o 
                 neo4j_query_result = session.run(q)                                                                     #usuario na tela
-                result = []
+                project_list = []
                 for record in neo4j_query_result:
-                    result.append(record.values())
-                return render(request, 'test/index.html',{'projects': result})
+                    project_list.append(record.values())
+                
+                # mostra o projeto selecionado atualmente
+                project_id = request.COOKIES.get('project_id')
+                if (project_id):
+                    q = f"""MATCH (p:Project{{project_id:"{project_id}"}}) return p.name"""       #retorna o nome do projeto 
+                    project_name = session.run(q).value()[0] 
+                else:
+                    project_name = "Nenhum projeto selecionado"
+                
+        
+                return render(request, 'test/index.html', {'projects': project_list, 'project_id': project_name})
         except Exception as e:
+            traceback.print_exc()
             return (e)
-    else:
-        return redirect('login_user')
 
 
 def login_user(request):
@@ -87,12 +99,14 @@ def register(request):
             with driver.session() as session: 
                 q = f"""MATCH (u:User{{email:"{email}"}}) return count (u)"""
                 res = session.run(q).single().value()
-
-                if (res == 0):      #nao existe esse email na base
+                copy_res = res
+                
+                if (copy_res == 0):      #nao existe esse email na base
                     id = uuid.uuid4()
                     q = f"""CREATE (u:User{{name:"{username}", passwd:"{password}", email:"{email}", num_projects:"0", user_id:"{id}"}}) return u"""
                     res = session.run(q).single()[0]
-                    if (res):
+                    copy_res = res
+                    if (copy_res):
                         user0 = User.objects.create_user(username, email, password)
                         user = authenticate(request, username=username, password=password)
                         login(request, user)
@@ -100,24 +114,38 @@ def register(request):
                         #response = redirect('index')
                         #response.set_cookie('user_id', id)
                         response_data = {
-                            'status': 'success',
+                            'auth_status': 'success',
                             'redirect_url': reverse('index')  
                         }
                         response = JsonResponse(response_data)
                         response.set_cookie('user_id', id)
                         return response
                 else:
-                    return JsonResponse("Usuario ou Email ja existe")
+                    response_data = {
+                        'auth_status': 'failure',
+                        'message': 'Usuario ou Email ja existe',  
+                    }
+                    response = JsonResponse(response_data)
+                    return response
 
         except Exception as e:
+            traceback.print_exc()
             return (e)
         #return render(request, 'test/index.html')
     return render(request, 'test/register.html')
 
+def logout_view(request):
+    logout(request)
+    response = redirect('login_user')
+    response.delete_cookie('user_id')
+    response.delete_cookie('project_id')
+    return response
 
- 
+
 def create_project(request):
-    if request.user.is_authenticated:
+    if (not request.user.is_authenticated):
+        return render(request, 'test/login.html')
+    else:
         if request.method == 'POST':
             nome = request.POST['nome']
             descricao = request.POST['descricao']
@@ -135,9 +163,28 @@ def create_project(request):
                     return (e)
         else:
            return render(request, 'test/create_project.html') 
-    else:
-        return render(request, 'test/login.html')
 
+@csrf_exempt 
+def set_project(request):
+    if request.user.is_authenticated:
+        if request.method == 'POST':
+            post_data = list(json.loads(request.body))
+            user_id = request.session['user_id']
+            if (post_data):
+                project_name = post_data[0]
+                try:
+                    driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+                    with driver.session() as session:
+                        q = f"""MATCH (p:Project{{name:'{project_name}',user_id:'{user_id}'}}) return p.project_id"""
+                        project_id = session.run(q).value()[0]  #value traz uma lista com 1 elemento, o [0] pega ele
+                        response = HttpResponse('ok')
+                        response.set_cookie('project_id', project_id)
+                        return response
+                except Exception as e:
+                    return HttpResponse(e)
+    else:
+        return redirect('login_user')
+    
 
 def results(request):
     if request.user.is_authenticated:
@@ -147,14 +194,6 @@ def results(request):
     else:
         return redirect('login_user')
   
-def logout_view(request):
-    logout(request)
-    response = redirect('login_user')
-    response.delete_cookie('user_id')
-    response.delete_cookie('project_id')
-    return response
-
-
 @csrf_exempt 
 def backend_test(request):
     #post_data = json.loads(request.body)
@@ -187,26 +226,6 @@ def scraper(request):
     result = scrape_sbc_event('https://sol.sbc.org.br/index.php/wit/issue/view/509')
     return render(request, 'test/scraper.html',{'works': result})
 
-@csrf_exempt 
-def set_project(request):
-    if request.user.is_authenticated:
-        if request.method == 'POST':
-            post_data = list(json.loads(request.body))
-            user_id = request.session['user_id']
-            if (post_data):
-                project_name = post_data[0]
-                try:
-                    driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
-                    with driver.session() as session:
-                        q = f"""MATCH (p:Project{{name:'{project_name}',user_id:'{user_id}'}}) return p.project_id"""
-                        project_id = session.run(q).value()[0]  #value traz uma lista com 1 elemento, o [0] pega ele
-                        response = HttpResponse('ok')
-                        response.set_cookie('project_id', project_id)
-                        return response
-                except Exception as e:
-                    return HttpResponse(e)
-    else:
-        return redirect('login_user')
 
 def save_altered_similarities(main_ref, params):
     driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
@@ -573,7 +592,7 @@ def splc(g):
             #print("todos caminhos", all_paths)  
         
         paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
-        #print("caminhos com o escolhido = ",len(paths_with_edge))            
+        print("caminhos com o escolhido = ",len(paths_with_edge))            
         g.es[index]["SPLC"] = len(paths_with_edge)
 
 

@@ -177,23 +177,13 @@
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h2 class="h2">Bem Vindo </h2>
-        <div class="btn-toolbar mb-2 mb-md-0">
-          <div class="btn-group me-2">
-            <button type="button" class="btn btn-sm btn-outline-secondary">Share</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary">Export</button>
-          </div>
-          <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle">
-            <span data-feather="calendar" class="align-text-bottom"></span>
-            This week
-          </button>
-        </div>
       </div>
 
 
 
-      <a class="nav-link fw-bold text-body" href="http://127.0.0.1:8000/create_project/">
+      <h3> <a class="nav-link fw-bold text-body" href="http://127.0.0.1:8000/create_project/">
         Criar projeto
-      </a>
+      </a> </h3>
       <h3> Lista de Projetos </h3>
       <div class="table-responsive">
         <table class="table table-striped table-sm" id="projects-table">
@@ -214,7 +204,10 @@
           {% endfor %}
           </tbody>
         </table>
+
         <button type="button" class="btn btn-primary" id="select-project">Selecionar projeto</button>
+        <p> </p>
+        <h4>Projeto atual = {{project_id}} </h4>
         <script>
             const checkboxes = document.querySelectorAll('input[name="project-checkbox"]');
             checkboxes.forEach((checkbox) => {
@@ -246,8 +239,8 @@
             .then(response => {
               console.log(response);
               if (response.status === 200) 
-              //location.reload();
-              console.log('ok');
+              location.reload();
+              //console.log('ok');
             })
           .catch(error => {
             console.error(error);
