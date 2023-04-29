@@ -207,6 +207,7 @@
 
         <button type="button" class="btn btn-primary" id="select-project">Selecionar projeto</button>
         <p> </p>
+        {% csrf_token %}
         <h4>Projeto atual = {{project_id}} </h4>
         <script>
             const checkboxes = document.querySelectorAll('input[name="project-checkbox"]');
@@ -234,7 +235,24 @@
             }
             
             project_data = JSON.stringify(project_data);
+            const csrfToken = document.getElementsByName("csrfmiddlewaretoken")[0].value;
             
+            axios({
+              method: "post",
+              url: "{% url 'set_project' %}",
+              data: project_data,
+              headers: { 'Content-Type': 'application/json',
+              'X-CSRFToken': csrfToken
+             }
+            })
+            .then(response => {
+              if (response.status === 200) 
+                location.reload();
+            })
+            .catch(error => {
+              console.error('Error:', error);
+            });
+            /*
             axios.post('/set_project', project_data)
             .then(response => {
               console.log(response);
@@ -245,6 +263,7 @@
           .catch(error => {
             console.error(error);
             }); 
+            */
             
         });
         </script>
