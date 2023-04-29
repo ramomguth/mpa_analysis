@@ -23,117 +23,115 @@ import traceback
 def index(request):
     if (not request.user.is_authenticated):
         return redirect('login_user')
-    else:
-        try:
-            driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
-            with driver.session() as session: 
-                q = f"""MATCH (p:Project{{user_id:"{request.session['user_id']}"}}) return p.name, p.descricao"""       #mostra a lista de projetos para o 
-                neo4j_query_result = session.run(q)                                                                     #usuario na tela
-                project_list = []
-                for record in neo4j_query_result:
-                    project_list.append(record.values())
-                
-                # mostra o projeto selecionado atualmente
-                project_id = request.COOKIES.get('project_id')
-                if (project_id):
-                    q = f"""MATCH (p:Project{{project_id:"{project_id}"}}) return p.name"""       #retorna o nome do projeto 
-                    project_name = session.run(q).value()[0] 
-                else:
-                    project_name = "Nenhum projeto selecionado"
-                
-        
-                return render(request, 'test/index.html', {'projects': project_list, 'project_id': project_name})
-        except Exception as e:
-            traceback.print_exc()
-            return (e)
+    try:
+        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        with driver.session() as session: 
+            q = f"""MATCH (p:Project{{user_id:"{request.session['user_id']}"}}) return p.name, p.descricao"""       #mostra a lista de projetos para o 
+            neo4j_query_result = session.run(q)                                                                     #usuario na tela
+            project_list = []
+            for record in neo4j_query_result:
+                project_list.append(record.values())
+            
+            # mostra o projeto selecionado atualmente
+            project_id = request.COOKIES.get('project_id')
+            if (project_id):
+                q = f"""MATCH (p:Project{{project_id:"{project_id}"}}) return p.name"""       #retorna o nome do projeto 
+                project_name = session.run(q).value()[0] 
+            else:
+                project_name = "Nenhum projeto selecionado"
+            
+    
+            return render(request, 'test/index.html', {'projects': project_list, 'project_id': project_name})
+    except Exception as e:
+        traceback.print_exc()
+        return (e)
 
 
 def login_user(request):
-    if request.method == 'POST':
-        email = request.POST['email']
-        password = request.POST['password']
-        try:
-            driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
-            with driver.session() as session: 
-                q = f"""MATCH (u:User{{email:"{email}",passwd:"{password}"}}) return u.name, u.user_id, u.passwd, u.email"""
-                result = session.run(q)
-                neo4j_response=[]           #eh necessario salvar a resposta numa lista, senao e consumida e fica nula
-                for record in result:       #o proprio if(result.value()) consome a resposta
-                    neo4j_response = record.values() 
+    if request.method != 'POST':
+        return render(request, 'test/login.html')
+    
+    email = request.POST['email']
+    password = request.POST['password']
+    try:
+        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        with driver.session() as session: 
+            q = f"""MATCH (u:User{{email:"{email}",passwd:"{password}"}}) return u.name, u.user_id, u.passwd, u.email"""
+            result = session.run(q)
+            neo4j_response=[]           #eh necessario salvar a resposta numa lista, senao e consumida e fica nula
+            for record in result:       #o proprio if(result.value()) consome a resposta
+                neo4j_response = record.values() 
 
-                if (neo4j_response):
-                    id = str(neo4j_response[1])
-                    user = authenticate(request, username=neo4j_response[0], password=neo4j_response[2])
+            if (neo4j_response):
+                id = str(neo4j_response[1])
+                user = authenticate(request, username=neo4j_response[0], password=neo4j_response[2])
+                login(request, user)
+                request.session['user_id'] = id
+                #response = redirect('index')
+                #response.set_cookie('user_id', id)
+                response_data = {
+                        'auth_status': 'success',
+                        'redirect_url': reverse('index')  # Replace 'index' with the name of the view you want to redirect to
+                }
+                response = JsonResponse(response_data)
+                response.set_cookie('user_id', id)
+                return response
+            else:
+                response_data = {
+                    'auth_status': 'failure',
+                    'message': 'Usuario ou senha incorreta.'  # Replace this with your actual error message
+                }
+                return JsonResponse(response_data)
+    except Exception as e:
+        return (e)
+ 
+def register(request):
+    if request.method != 'POST':
+        return render(request, 'test/register.html')
+    
+    username = request.POST['username']
+    email = request.POST['email']
+    password = request.POST['password']        
+    password_2 = request.POST['repeatpasswd']
+    if (password != password_2):
+        return HttpResponse("Senhas nao sao iguais") 
+    try:
+        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        with driver.session() as session: 
+            q = f"""MATCH (u:User{{email:"{email}"}}) return count (u)"""
+            res = session.run(q).single().value()
+            copy_res = res
+            
+            if (copy_res == 0):      #nao existe esse email na base
+                id = uuid.uuid4()
+                q = f"""CREATE (u:User{{name:"{username}", passwd:"{password}", email:"{email}", num_projects:"0", user_id:"{id}"}}) return u"""
+                res = session.run(q).single()[0]
+                copy_res = res
+                if (copy_res):
+                    user0 = User.objects.create_user(username, email, password)
+                    user = authenticate(request, username=username, password=password)
                     login(request, user)
-                    request.session['user_id'] = id
+                    request.session['user_id'] = str(id)
                     #response = redirect('index')
                     #response.set_cookie('user_id', id)
                     response_data = {
-                            'auth_status': 'success',
-                            'redirect_url': reverse('index')  # Replace 'index' with the name of the view you want to redirect to
+                        'auth_status': 'success',
+                        'redirect_url': reverse('index')  
                     }
                     response = JsonResponse(response_data)
                     response.set_cookie('user_id', id)
                     return response
-                else:
-                    response_data = {
-                        'auth_status': 'failure',
-                        'message': 'Usuario ou senha incorreta.'  # Replace this with your actual error message
-                    }
-                    return JsonResponse(response_data)
-        except Exception as e:
-            return (e)
-    else:
-        return render(request, 'test/login.html')
-    #return redirect('index')
- 
-def register(request):
-    if request.method == 'POST':
-        username = request.POST['username']
-        email = request.POST['email']
-        password = request.POST['password']        
-        password_2 = request.POST['repeatpasswd']
-        if (password != password_2):
-            return HttpResponse("Senhas nao sao iguais") 
-        try:
-            driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
-            with driver.session() as session: 
-                q = f"""MATCH (u:User{{email:"{email}"}}) return count (u)"""
-                res = session.run(q).single().value()
-                copy_res = res
-                
-                if (copy_res == 0):      #nao existe esse email na base
-                    id = uuid.uuid4()
-                    q = f"""CREATE (u:User{{name:"{username}", passwd:"{password}", email:"{email}", num_projects:"0", user_id:"{id}"}}) return u"""
-                    res = session.run(q).single()[0]
-                    copy_res = res
-                    if (copy_res):
-                        user0 = User.objects.create_user(username, email, password)
-                        user = authenticate(request, username=username, password=password)
-                        login(request, user)
-                        request.session['user_id'] = str(id)
-                        #response = redirect('index')
-                        #response.set_cookie('user_id', id)
-                        response_data = {
-                            'auth_status': 'success',
-                            'redirect_url': reverse('index')  
-                        }
-                        response = JsonResponse(response_data)
-                        response.set_cookie('user_id', id)
-                        return response
-                else:
-                    response_data = {
-                        'auth_status': 'failure',
-                        'message': 'Usuario ou Email ja existe',  
-                    }
-                    response = JsonResponse(response_data)
-                    return response
+            else:
+                response_data = {
+                    'auth_status': 'failure',
+                    'message': 'Usuario ou Email ja existe',  
+                }
+                response = JsonResponse(response_data)
+                return response
 
-        except Exception as e:
-            traceback.print_exc()
-            return (e)
-        #return render(request, 'test/index.html')
-    return render(request, 'test/register.html')
+    except Exception as e:
+        traceback.print_exc()
+        return (e)
 
 def logout_view(request):
     logout(request)
@@ -146,48 +144,47 @@ def logout_view(request):
 def create_project(request):
     if (not request.user.is_authenticated):
         return render(request, 'test/login.html')
-    else:
-        if request.method == 'POST':
-            nome = request.POST['nome']
-            descricao = request.POST['descricao']
-            user_id = request.session['user_id']
-            if (nome and descricao and user_id):
-                try:
-                    driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
-                    with driver.session() as session:
-                        id = uuid.uuid4()
-                        q = f"""CREATE (p:Project{{name:"{nome}", descricao:"{descricao}", user_id:"{user_id}", project_id:"{id}", num_works:"0"}}) return p"""
-                        result = session.run(q).single()
-                        response = redirect('index')
-                        return response
-                except Exception as e:
-                    return (e)
-        else:
-           return render(request, 'test/create_project.html') 
+    if request.method != 'POST':
+        return render(request, 'test/create_project.html') 
+    
+    nome = request.POST['nome']
+    descricao = request.POST['descricao']
+    user_id = request.session['user_id']
+    if (nome and descricao and user_id):
+        try:
+            driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+            with driver.session() as session:
+                id = uuid.uuid4()
+                q = f"""CREATE (p:Project{{name:"{nome}", descricao:"{descricao}", user_id:"{user_id}", project_id:"{id}", num_works:"0"}}) return p"""
+                result = session.run(q).single()
+                response = redirect('index')
+                return response
+        except Exception as e:
+            return (e)
+   
 
 
 def set_project(request):
-    if request.user.is_authenticated:
-        if request.method == 'POST':
-            post_data = list(json.loads(request.body))
-            user_id = request.session['user_id']
-            if (post_data):
-                project_name = post_data[0]
-                try:
-                    driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
-                    with driver.session() as session:
-                        q = f"""MATCH (p:Project{{name:'{project_name}',user_id:'{user_id}'}}) return p.project_id"""
-                        project_id = session.run(q).value()[0]  #value traz uma lista com 1 elemento, o [0] pega ele
-                        response = HttpResponse('ok')
-                        response.set_cookie('project_id', project_id)
-                        return response
-                except Exception as e:
-                    return HttpResponse(e)
+    if (request.user.is_authenticated and request.method == 'POST'):
+        post_data = list(json.loads(request.body))
+        user_id = request.session['user_id']
+        if (post_data):
+            project_name = post_data[0]
+            try:
+                driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+                with driver.session() as session:
+                    q = f"""MATCH (p:Project{{name:'{project_name}',user_id:'{user_id}'}}) return p.project_id"""
+                    project_id = session.run(q).value()[0]  #value traz uma lista com 1 elemento, o [0] pega ele
+                    response = HttpResponse('ok')
+                    response.set_cookie('project_id', project_id)
+                    return response
+            except Exception as e:
+                return HttpResponse(e)
     else:
         return redirect('login_user')
     
 
-def results(request):
+def results(request): #simil result?
     if request.user.is_authenticated:
         driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
         result = return_simil(driver)
@@ -224,8 +221,34 @@ def backend_test(request):
     return HttpResponse("e")
                 
 def scraper(request):
-    result = scrape_sbc_event('https://sol.sbc.org.br/index.php/wit/issue/view/509')
-    return render(request, 'test/scraper.html',{'works': result})
+    if (not request.user.is_authenticated):
+        return render(request, 'test/login.html')
+    if (request.user.is_authenticated and request.method == 'POST'):
+            try:
+                body_unicode = request.body.decode('utf-8')
+                post_data = json.loads(body_unicode)
+                result = scrape_sbc_event(post_data)
+                
+                if (result = "invalid_url"):
+                    response_data = {
+                    'status': result,
+                    }
+                response_data = {
+                    'content': result,
+                    'status': 'ok',
+                }
+                response = JsonResponse(response_data)
+                return response
+            except Exception as e:
+                response_data = {
+                    'content': result,
+                    'status': 'ok',
+                }
+                return (e)
+            #result = scrape_sbc_event('https://sol.sbc.org.br/index.php/wit/issue/view/509')
+    #return render(request, 'test/scraper.html',{'works': result})
+    return render(request, 'test/scraper.html')
+
 
 
 
@@ -345,107 +368,3 @@ def get_mpa_data(request):
 
         return HttpResponse("ok")
 
-
-
-def longest_path_dfs(graph, vertex, visited, path, edge_path, path_length, max_path, max_edge_path, max_length):
-    visited[vertex] = True
-    path.append(vertex)
-
-    for neighbor in graph.neighbors(vertex, mode=ig.OUT):
-        edge = graph.get_eid(vertex, neighbor, directed=True, error=False)
-        if edge != -1:
-            edge_splc = graph.es[edge]['SPLC']
-            if not visited[neighbor]:
-                path_length += edge_splc
-                edge_path.append(edge)
-                max_path, max_edge_path, max_length = longest_path_dfs(graph, neighbor, visited, path, edge_path, path_length, max_path, max_edge_path, max_length)
-                path_length -= edge_splc
-                edge_path.pop()
-
-    if path_length > max_length:
-        max_path = list(path)
-        max_edge_path = list(edge_path)
-        max_length = path_length
-
-    path.pop()
-    visited[vertex] = False
-
-    return max_path, max_edge_path, max_length
-
-def spc(g):
-        sinks = [v.index for v in g.vs if g.outdegree(v.index) == 0]
-        primary_sources = [v.index for v in g.vs if g.indegree(v.index) == 0]
-        edge_list = g.get_edgelist()
-        # find all simple paths between start and end vertices
-        for index,edge in enumerate(edge_list):
-            all_paths = []
-            #print("edge = ",g.vs[edge[0]]['name'],g.vs[edge[1]]['name'])
-
-            for ps in primary_sources:
-                for s in sinks:
-                    paths = g.get_all_simple_paths(ps, s, mode="out")
-                    all_paths.extend(paths)
-                #all_paths = g.get_all_simple_paths(g.vs.find(0), g.vs.find(name=end_vertex).index, mode="out")
-            
-            #print("todos caminhos", all_paths)  
-            # filter paths that include the specific edge
-            paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
-            #print("caminhos com o escolhido = ",len(paths_with_edge))
-            
-            g.es[index]["SPC"] = len(paths_with_edge)
-
-def splc(g):
-    sinks = [v.index for v in g.vs if g.outdegree(v.index) == 0]
-    primary_sources = [v.index for v in g.vs if g.indegree(v.index) == 0]
-    edge_list = g.get_edgelist()
-
-        # find all simple paths between start and end vertices
-    for index,edge in enumerate(edge_list):
-        all_paths = []
-        current_node = edge_list[index][1]  #tem o no de destino, tipo c->e, e eh o destino
-        #print("edge = ",g.vs[edge[0]]['name'],g.vs[edge[1]]['name'])
-        predecessors = []
-        unique_pred = []
-        find_all_predecessors(g, current_node, predecessors)
-        for p in predecessors:
-            unique_pred.append(p.index) #p["name"]
-        unique_pred = list(set(unique_pred))
-
-        for elem in unique_pred:
-            for s in sinks:
-                paths = g.get_all_simple_paths(elem, s, mode="out")
-                all_paths.extend(paths)
-            #all_paths = g.get_all_simple_paths(g.vs.find(0), g.vs.find(name=end_vertex).index, mode="out")                
-            #print("todos caminhos", all_paths)  
-        
-        paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
-        print("caminhos com o escolhido = ",len(paths_with_edge))            
-        g.es[index]["SPLC"] = len(paths_with_edge)
-
-
-def find_all_predecessors(g, node, predecessors):
-    pred = g.vs[node].predecessors()
-    if len(pred) == 0:
-        return predecessors
-    else:
-        predecessors.extend(pred)
-        for p in pred:
-            find_all_predecessors(g, p.index, predecessors)
-
-
-def main_search(g):
-    linegraph = g.linegraph()
-    #linegraph.vs["spc"] = spc(g)
-
-    source_edges = [v for v in linegraph.vs if v.degree(mode="in") == 0]
-    sink_edges = [v for v in linegraph.vs if v.degree(mode="out") == 0]
-
-    paths = [path for source in source_edges for path in linegraph.get_all_simple_paths(source, to=sink_edges, mode="out")]
-    path_lengths = [sum(linegraph.vs[path]["spc"]) for path in paths]
-
-    linegraph.vs["main_path"] = 0
-    main_path_index = path_lengths.index(max(path_lengths))
-    main_path = paths[main_path_index]
-    linegraph.vs[main_path]["main_path"] = 1
-
-    return linegraph.vs["main_path"]

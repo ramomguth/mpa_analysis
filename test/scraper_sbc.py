@@ -133,6 +133,12 @@ def append_work(name):
 '''
 def scrape_sbc_event(url):
 	urls = []
+
+	try:
+		response = requests.head(url)
+	except requests.exceptions.RequestException as e:
+		return ("invalid_url")
+	
 	req=requests.get(url)
 	content=req.text
 	soup=BeautifulSoup(content, "html.parser")
@@ -143,7 +149,6 @@ def scrape_sbc_event(url):
 	except: pass
 	#return urls
 
-#def scrape_sbc_event_works(urls):
 	ref_id = 0
 	next_ref = ref_id * 1000 
 	references=[]
