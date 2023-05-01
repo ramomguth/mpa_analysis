@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
 from neo4j import GraphDatabase
-#import networkx as nx
+from dataclasses import dataclass
 import igraph as ig
 from igraph import Graph
 import numpy as np
@@ -223,29 +223,43 @@ def backend_test(request):
 def scraper(request):
     if (not request.user.is_authenticated):
         return render(request, 'test/login.html')
+    project_id = request.COOKIES.get('project_id')
+    if (not project_id):
+        return redirect('index') 
+     
     if (request.user.is_authenticated and request.method == 'POST'):
-            try:
-                body_unicode = request.body.decode('utf-8')
-                post_data = json.loads(body_unicode)
-                result = scrape_sbc_event(post_data)
-                
-                if (result = "invalid_url"):
-                    response_data = {
-                    'status': result,
-                    }
+        project_id = request.COOKIES.get('project_id')
+        try:
+            body_unicode = request.body.decode('utf-8')
+            post_data = json.loads(body_unicode)
+            result = scrape_sbc_event(post_data)
+            
+            if result == "invalid_url":
                 response_data = {
-                    'content': result,
+                    'status': result,
+                }
+                response = JsonResponse(response_data)
+                return response
+            else:
+                print_data = []
+                for trabalho in result:
+                    print_data.append(trabalho.title)
+                    for ref in trabalho.references:
+                        print_data.append(ref)
+    
+                response_data = {
+                    'content': print_data,
                     'status': 'ok',
                 }
                 response = JsonResponse(response_data)
                 return response
-            except Exception as e:
-                response_data = {
-                    'content': result,
-                    'status': 'ok',
-                }
-                return (e)
-            #result = scrape_sbc_event('https://sol.sbc.org.br/index.php/wit/issue/view/509')
+        except Exception as e:
+            #traceback.print_exc()
+            response_data = {
+                'content': result,
+                'status': 'ok',
+            }
+            return (e)
     #return render(request, 'test/scraper.html',{'works': result})
     return render(request, 'test/scraper.html')
 

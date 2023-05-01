@@ -2,6 +2,7 @@ import difflib as dl
 import re
 import time
 from dataclasses import dataclass
+import traceback
 
 #from selenium import webdriver
 import pandas as pd
@@ -14,10 +15,9 @@ from neo4j import GraphDatabase
 @dataclass
 class work:
     title: str
-    authors: [] 		#type: ignore
+    #tipo: str
     references: []		#type: ignore
-    ref_properties: []	#type: ignore
-    num_ref: int
+    #num_ref: int
 
 
 #Variaveis globais
@@ -32,8 +32,6 @@ ref_id=0
 num_trabalhos = 0
 ano=0
 
-def batata():
-    print("batata")
     
 def string_similarity(str1, str2):
     result =  dl.SequenceMatcher(a=str1.lower(), b=str2.lower())
@@ -137,6 +135,7 @@ def scrape_sbc_event(url):
 	try:
 		response = requests.head(url)
 	except requests.exceptions.RequestException as e:
+		traceback.print_exc()
 		return ("invalid_url")
 	
 	req=requests.get(url)
@@ -149,46 +148,91 @@ def scrape_sbc_event(url):
 	except: pass
 	#return urls
 
-	ref_id = 0
-	next_ref = ref_id * 1000 
-	references=[]
-	authors=[]
-	for element in urls: #range(len(urls))
+	#ref_id = 0
+	#next_ref = ref_id * 1000 
+	trabalhos=[]
+
+	#2 casos
+	# 1 que nao tem as refs
+	# 2 quanto tem um href no meio da ref
+
+	for i, element in enumerate(urls): #range(len(urls))
+		#element = urls[1]
+		#print(i)
 		req=requests.get(element)
 		content=req.text
 		soup=BeautifulSoup(content, "html.parser")
 
-		names = soup.findAll(attrs={'class':'name'}) #pega os autores ou instituicao
-		for span in names:
-			authors.append(span.text)
+		work_title=soup.find(attrs={'class':'page_title'})
+		work_title = re.sub('\s+',' ',work_title.text)
+		#print("i=",i,"  ",work_title)
+		#trabalhos.append(work_title)
+		
+		#names = soup.findAll(attrs={'class':'name'}) #pega os autores ou instituicao
+		#for span in names:
+		#	authors.append(span.text)
 
 		#ref = soup.findAll(attrs={'class':'item references'}) #pega os autores ou instituicao
-		#for i in ref:
-		#	references.append(i.text)
-		h=soup.findAll('h3')		#remove h3 inutil
-		for match in h:
-			match.decompose()
+		todas_referencias = soup.find(attrs={'class':'item references'})
+		if todas_referencias == None:
+			#w = work(work_title, [])
+			#trabalhos.append(w)
+			continue
+		
+		value_div = todas_referencias.find('div', class_='value')
+		refs = []
+		
+		br_tags = value_div.find_all('br')
+		i=0
+		k= (value_div.get_text())
+		#k = re.sub('\n','|',k)
+		refe = k.split('\n')
+		for i,r in enumerate(refe):
+			r = r.replace('\t', '')
+			refe[i] = r
+			r = re.sub('\r','',r)
+			refe[i] = r
+			if refe[i] == '': refe.pop(i)
 
-		ref = soup.findAll(attrs={'class':'item references'}) #pega as referencias e limpa elas
-		for k in ref:
+		
+		for br_tag in br_tags:
+			k= (br_tag.get_text())
+			i += 1
+			refs.append(k)
+			#for a_tag in br_tag.find_all('a'):
+			#	a_tag.decompose()
+		
+		for br_tag in br_tags:		
+			if br_tag.previous_sibling:
+				ref = br_tag.previous_sibling.get_text()
+				ref = re.sub('\n','',ref)
+				if ref == '.' or ref == '': continue
+				#refs.append(ref)
+			
+		w = work(work_title, refe)
+		trabalhos.append(w)
+		
+	"""for k in ref:
 			r = re.sub('\t','',k.text)
 			r = re.sub('\n','',r)
 			#r = re.sub('\r','',r)
 			s=r.split('\r')
-			ref_id += 1
-			next_ref = 1000 * ref_id
+			#ref_id += 1
+			#next_ref = 1000 * ref_id
+			lista_refs_do_trabalho = []
 			for j in range(len(s)): 			#as referencias le tudo como uma so, precisa separar
-				references.append(s[j])
-				num_ref += 1
+				lista_refs_do_trabalho.append(s[j])
+				#trabalhos.append(s[j])
 				#print (num_ref)		
 				#rf = 'ref_id=' + ref_id + 'status=' + 0
 				#ref_properties.append((ref_id,0,0,ano))
 
-			#w = work(title2, authors, references, ref_properties, num_ref)
-			#trabalhos.append(w)
-		#print(references[0])
-		num_ref = next_ref
-	return references
+			w = work(work_title, lista_refs_do_trabalho)
+			
+		trabalhos.append(w)"""
+	#num_ref = next_ref
+	#print(trabalhos[0].references[0])
+	return trabalhos
 '''
 def save_stuff(authors, references):
 	for i in authors:
