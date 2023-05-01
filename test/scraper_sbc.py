@@ -1,6 +1,7 @@
 import difflib as dl
 import re
 import time
+import uuid
 from dataclasses import dataclass
 import traceback
 
@@ -156,7 +157,7 @@ def scrape_sbc_event(url):
 	# 1 que nao tem as refs
 	# 2 quanto tem um href no meio da ref
 
-	for i, element in enumerate(urls): #range(len(urls))
+	for i, element in enumerate(urls): #faz o scraping de cada um dos trabalhos e suas referencias
 		#element = urls[1]
 		#print(i)
 		req=requests.get(element)
@@ -166,23 +167,17 @@ def scrape_sbc_event(url):
 		work_title=soup.find(attrs={'class':'page_title'})
 		work_title = re.sub('\s+',' ',work_title.text)
 		#print("i=",i,"  ",work_title)
-		#trabalhos.append(work_title)
-		
-		#names = soup.findAll(attrs={'class':'name'}) #pega os autores ou instituicao
-		#for span in names:
-		#	authors.append(span.text)
 
-		#ref = soup.findAll(attrs={'class':'item references'}) #pega os autores ou instituicao
 		todas_referencias = soup.find(attrs={'class':'item references'})
-		if todas_referencias == None:
+		
+		if todas_referencias == None:		#se nao tem referencias, pula o trabalho
 			#w = work(work_title, [])
-			#trabalhos.append(w)
 			continue
 		
 		value_div = todas_referencias.find('div', class_='value')
 		refs = []
 		
-		br_tags = value_div.find_all('br')
+		br_tags = value_div.find_all('br')	#as referencias sao separadas por 2 tags <br>, que precisam ser removidas
 		i=0
 		k= (value_div.get_text())
 		#k = re.sub('\n','|',k)
@@ -211,8 +206,93 @@ def scrape_sbc_event(url):
 			
 		w = work(work_title, refe)
 		trabalhos.append(w)
+	return trabalhos	
+
+def save_scraper_data(lista_trabalhos, user_id, project_id):
+	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+	try:
+		with driver.session() as session: 
+			tx = session.begin_transaction()
+			for index, element in enumerate(lista_trabalhos):
+				#element = lista_trabalhos[0]
+				work_title = element.title
+				trabalho_ref_list = element.references
+				trabalho_num_ref = len(trabalho_ref_list)
+				work_id = str(uuid.uuid4())
 		
-	"""for k in ref:
+				#q=f"""CREATE (t:trabalho {{title:'{title}', num_ref:'{trabalho_num_ref}', tipo:'primario', id:'{work_id}'}})"""
+				query = "CREATE (t:trabalho {title:$title, num_ref:$num_ref, tipo:$tipo, id:$id, user_id:$user_id, project_id:$project_id})"
+				tx.run(query,title=work_title, num_ref=trabalho_num_ref, tipo='primario', id=work_id, user_id=user_id, project_id=project_id)
+		
+				for reference in trabalho_ref_list:
+					ref_id = str(uuid.uuid4())
+					reference  = reference.replace('\t', '')
+					#reference = re.sub('\"', '', reference)
+					#reference = re.sub('\'', '', reference)
+					query = "CREATE (t:trabalho {title:$title, tipo:$tipo, id:$id, user_id:$user_id, project_id:$project_id})"
+					tx.run(query,title=reference, tipo='referencia', id=ref_id, user_id=user_id, project_id=project_id)
+
+					q = f"""MATCH (t:trabalho {{id:'{work_id}'}}), (r:trabalho{{id:'{ref_id}'}}) CREATE (t)-[a:referencia]->(r)"""
+					tx.run(q)
+			tx.commit()
+			return ("ok")
+		
+	except Exception as e:
+		tx.rollback()
+		traceback.print_exc()
+		return(e)
+	
+def string_similarity(str1, str2):
+    result =  dl.SequenceMatcher(a=str1.lower(), b=str2.lower())
+    return result.ratio()
+
+def compare_refs():
+	st = time.time()
+	trabalhos = []
+	simil = []
+	num_trabalhos = len(trabalhos)
+	io=0
+	for i in range(num_trabalhos):
+		#loop do vetor de trabalhos
+		#print('i=',i,'num',trabalhos[i].num_ref)
+		for j in range(trabalhos[i].num_ref):
+
+			#loop do vetor de referencias
+			for k in range (num_trabalhos):
+				
+				#e necessario comparar cada referencia com todos
+				#os outros trabalhos e suas referencias
+
+				current_work_pos = i
+				next_work_pos = k+1
+				if (next_work_pos >= num_trabalhos): 
+					next_work_pos = num_trabalhos - next_work_pos
+				
+				# se i=k eh o mesmo trabalho,logo nao precisa comparar
+				if (next_work_pos == i): break	
+				
+				next_work = trabalhos[next_work_pos]
+				for w in range( next_work.num_ref ):
+
+					#compara com cada referencia do proximo trabalho
+					str1 = trabalhos[i].references[j]  
+					str2 = next_work.references[w]
+					#print('trabalho=',i,'ref=',j,'comp com trabalho=',next_work_pos,'ref=',w)
+
+					similarity = (string_similarity(str1,str2))
+					str1_id = trabalhos[i].ref_properties[j][0]
+					str2_id = next_work.ref_properties[w][0]
+					#if (similarity>0.75): print(similarity,str1,str2)
+					if (similarity>0.75): 
+						tup = (similarity,str1_id,str1,str2_id,str2,0)
+						simil.append(tup)
+					io+=1
+	et = time.time()
+	print('time=',et-st)
+	print('io=',io)
+
+
+"""for k in ref:
 			r = re.sub('\t','',k.text)
 			r = re.sub('\n','',r)
 			#r = re.sub('\r','',r)
@@ -232,7 +312,7 @@ def scrape_sbc_event(url):
 		trabalhos.append(w)"""
 	#num_ref = next_ref
 	#print(trabalhos[0].references[0])
-	return trabalhos
+
 '''
 def save_stuff(authors, references):
 	for i in authors:
@@ -310,48 +390,6 @@ def scrape_sbc_event_works(urls):
 	#del trabalhos[0]		#tem coisa inutil na linha 0
 	num_trabalhos = len(trabalhos)
 
-def compare_refs():
-	st = time.time()
-	num_trabalhos = len(trabalhos)
-	io=0
-	for i in range(num_trabalhos):
-		#loop do vetor de trabalhos
-		#print('i=',i,'num',trabalhos[i].num_ref)
-		for j in range(trabalhos[i].num_ref):
-
-			#loop do vetor de referencias
-			for k in range (num_trabalhos):
-				
-				#e necessario comparar cada referencia com todos
-				#os outros trabalhos e suas referencias
-
-				current_work_pos = i
-				next_work_pos = k+1
-				if (next_work_pos >= num_trabalhos): 
-					next_work_pos = num_trabalhos - next_work_pos
-				
-				# se i=k eh o mesmo trabalho,logo nao precisa comparar
-				if (next_work_pos == i): break	
-				
-				next_work = trabalhos[next_work_pos]
-				for w in range( next_work.num_ref ):
-
-					#compara com cada referencia do proximo trabalho
-					str1 = trabalhos[i].references[j]  
-					str2 = next_work.references[w]
-					#print('trabalho=',i,'ref=',j,'comp com trabalho=',next_work_pos,'ref=',w)
-
-					similarity = (string_similarity(str1,str2))
-					str1_id = trabalhos[i].ref_properties[j][0]
-					str2_id = next_work.ref_properties[w][0]
-					#if (similarity>0.75): print(similarity,str1,str2)
-					if (similarity>0.75): 
-						tup = (similarity,str1_id,str1,str2_id,str2,0)
-						simil.append(tup)
-					io+=1
-	et = time.time()
-	print('time=',et-st)
-	print('io=',io)
  
 				
 

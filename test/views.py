@@ -229,6 +229,7 @@ def scraper(request):
      
     if (request.user.is_authenticated and request.method == 'POST'):
         project_id = request.COOKIES.get('project_id')
+        user_id = request.COOKIES.get('user_id')
         try:
             body_unicode = request.body.decode('utf-8')
             post_data = json.loads(body_unicode)
@@ -246,7 +247,8 @@ def scraper(request):
                     print_data.append(trabalho.title)
                     for ref in trabalho.references:
                         print_data.append(ref)
-    
+
+                save_scraper_data(result, user_id, project_id)
                 response_data = {
                     'content': print_data,
                     'status': 'ok',
@@ -254,7 +256,7 @@ def scraper(request):
                 response = JsonResponse(response_data)
                 return response
         except Exception as e:
-            #traceback.print_exc()
+            traceback.print_exc()
             response_data = {
                 'content': result,
                 'status': 'ok',
