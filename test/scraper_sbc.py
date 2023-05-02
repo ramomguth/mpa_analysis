@@ -4,7 +4,7 @@ import time
 import uuid
 from dataclasses import dataclass
 import traceback
-
+from itertools import combinations
 #from selenium import webdriver
 import pandas as pd
 import requests
@@ -246,9 +246,57 @@ def string_similarity(str1, str2):
     result =  dl.SequenceMatcher(a=str1.lower(), b=str2.lower())
     return result.ratio()
 
-def compare_refs():
+def compare_refs(user_id, project_id):
 	st = time.time()
-	trabalhos = []
+	#trabalhos = lista_trabalhos
+	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+	try:
+		with driver.session() as session: 
+			q = f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.title as title, t.tipo as tipo, id(t) as id limit 100"""
+			result = session.run(q)
+			lista_trabalhos = []
+			for record in result:
+				lista_trabalhos.append(record.values())
+
+	except Exception as e:
+		traceback.print_exc()
+		return(e)
+	
+	simil = []
+	num_trabalhos = len(lista_trabalhos)
+	strings_dict = {}
+
+	for lst in lista_trabalhos:
+		#strings_dict[lst[0]] = {'tipo': lst[1], 'id': lst[2]}
+		strings_dict[lst[0]] = (lst[1], lst[2])
+
+	for str1, str2 in combinations(strings_dict.keys(), 2):
+		similarity = (string_similarity(str1,str2))
+		if similarity > 0.65:
+			#print(similarity, str1,"|||", str2)
+			#print(f"Add info for str1: {strings_dict[str1]}")
+			#print(f"Add info for str2: {strings_dict[str2]}")
+			tup = (similarity, strings_dict[str1], strings_dict[str2])
+			simil.append(tup)
+
+	print(simil)
+	'''for str1, str2 in combinations(lista_trabalhos, 2):
+		similarity = (string_similarity(str1,str2))
+		if similarity > 0.75:
+				#print(similarity, str1,"|||", str2)
+				tup = (similarity, str1, str2)
+				simil.append(tup)'''
+
+	"""for i in range(num_trabalhos):
+		for k in range (num_trabalhos):
+			str1 = lista_trabalhos[i][0]
+			str2 = lista_trabalhos[k][0]
+			similarity = (string_similarity(str1,str2))
+			if similarity > 0.75:
+				tup = (similarity, str1, str2)
+				simil.append(tup)"""
+	
+	"""
 	simil = []
 	num_trabalhos = len(trabalhos)
 	io=0
@@ -289,7 +337,7 @@ def compare_refs():
 					io+=1
 	et = time.time()
 	print('time=',et-st)
-	print('io=',io)
+	print('io=',io)"""
 
 
 """for k in ref:

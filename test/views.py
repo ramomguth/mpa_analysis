@@ -39,8 +39,8 @@ def index(request):
                 project_name = session.run(q).value()[0] 
             else:
                 project_name = "Nenhum projeto selecionado"
-            
-    
+            user_id = request.COOKIES.get('user_id')
+            compare_refs(user_id, project_id)
             return render(request, 'test/index.html', {'projects': project_list, 'project_id': project_name})
     except Exception as e:
         traceback.print_exc()
@@ -71,7 +71,7 @@ def login_user(request):
                 #response.set_cookie('user_id', id)
                 response_data = {
                         'auth_status': 'success',
-                        'redirect_url': reverse('index')  # Replace 'index' with the name of the view you want to redirect to
+                        'redirect_url': reverse('index')  
                 }
                 response = JsonResponse(response_data)
                 response.set_cookie('user_id', id)
@@ -79,7 +79,7 @@ def login_user(request):
             else:
                 response_data = {
                     'auth_status': 'failure',
-                    'message': 'Usuario ou senha incorreta.'  # Replace this with your actual error message
+                    'message': 'Usuario ou senha incorreta.'  
                 }
                 return JsonResponse(response_data)
     except Exception as e:
@@ -249,6 +249,7 @@ def scraper(request):
                         print_data.append(ref)
 
                 save_scraper_data(result, user_id, project_id)
+                
                 response_data = {
                     'content': print_data,
                     'status': 'ok',
