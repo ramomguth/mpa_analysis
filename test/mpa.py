@@ -43,19 +43,6 @@ def save_altered_similarities(main_ref, params):
     except Exception as e:
         return(e)
 
-
-def return_simil(driver):
-    with driver.session() as session: 
-        result = session.run("MATCH (a:Reference)-[c:Similar_to]->(b:Reference) return a.ref_id as a_ref_id,a.title as a_title, b.ref_id as b_ref, b.title as b_title,c.similarity order by a.title")
-        val1=[]
-        for record in result:
-            #val1.append(record['a_ref_id'])
-            val1.append(record.values())
-        
-        for index,element in enumerate(val1):
-            simil = round(float(element[4]),3)
-            val1[index][4] = simil
-        return val1
     
 
 def simplequery(driver):

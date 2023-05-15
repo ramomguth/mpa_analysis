@@ -183,14 +183,68 @@ def set_project(request):
     else:
         return redirect('login_user')
     
+def scraper(request):
+    if (not request.user.is_authenticated):
+        return render(request, 'test/login.html')
+    project_id = request.COOKIES.get('project_id')
+    if (not project_id):
+        return redirect('index') 
+     
+    if (request.user.is_authenticated and request.method == 'POST'):
+        project_id = request.COOKIES.get('project_id')
+        user_id = request.COOKIES.get('user_id')
+        try:
+            #pega o link do usuario
+            body_unicode = request.body.decode('utf-8')
+            post_data = json.loads(body_unicode)
+            result = scrape_sbc_event(post_data)
+            
+            if result == "invalid_url":
+                response_data = {
+                    'status': result,
+                }
+                response = JsonResponse(response_data)
+                return response
+            else:
+                print_data = []
+                for trabalho in result:
+                    print_data.append(trabalho.title)
+                    for ref in trabalho.references:
+                        print_data.append(ref)
 
-def results(request): #simil result?
-    if request.user.is_authenticated:
-        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
-        result = return_simil(driver)
-        return render(request, 'test/stuff.html',{'refs': result})
-    else:
+                save_scraper_data(result, user_id, project_id)
+                compare_refs(user_id, project_id)
+                response_data = {
+                    'content': print_data,
+                    'status': 'ok',
+                }
+                response = JsonResponse(response_data)
+                return response
+        except Exception as e:
+            traceback.print_exc()
+            response_data = {
+                'content': result,
+                'status': 'ok',
+            }
+            return (e)
+    #return render(request, 'test/scraper.html',{'works': result})
+    return render(request, 'test/scraper.html')
+
+
+
+def similarities(request): #simil result?
+    if (not request.user.is_authenticated):
         return redirect('login_user')
+    
+    user_id = request.COOKIES.get('user_id')
+    project_id = request.COOKIES.get('project_id')
+    if (not project_id):
+        return redirect('index')
+    q=f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}})-[s:similar_to]->(r:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.id as a_ref_id, t.title as a_title, r.id as b_ref, r.title as b_title, s.value as similarity order by t.title""" 
+    print(q)
+    result = return_simil(user_id, project_id)
+    return render(request, 'test/similarities.html',{'refs': result})
+   
   
 @csrf_exempt 
 def backend_test(request):
@@ -210,63 +264,16 @@ def backend_test(request):
             main_ref = post_data.pop(0)
             refs_to_alter = list(itertools.chain(*post_data))
             
-            for elem in refs_to_alter:
-                resp = save_altered_similarities(main_ref,elem)
+           # for elem in refs_to_alter:
+           #     resp = save_altered_similarities(main_ref,elem)
          
-            if (resp == "ok"):
-                return HttpResponse(200)
+            #if (resp == "ok"):
+            return HttpResponse(200)
         except Exception as e:
                 return HttpResponse(e)
         
     return HttpResponse("e")
                 
-def scraper(request):
-    if (not request.user.is_authenticated):
-        return render(request, 'test/login.html')
-    project_id = request.COOKIES.get('project_id')
-    if (not project_id):
-        return redirect('index') 
-     
-    if (request.user.is_authenticated and request.method == 'POST'):
-        project_id = request.COOKIES.get('project_id')
-        user_id = request.COOKIES.get('user_id')
-        try:
-            body_unicode = request.body.decode('utf-8')
-            post_data = json.loads(body_unicode)
-            result = scrape_sbc_event(post_data)
-            
-            if result == "invalid_url":
-                response_data = {
-                    'status': result,
-                }
-                response = JsonResponse(response_data)
-                return response
-            else:
-                print_data = []
-                for trabalho in result:
-                    print_data.append(trabalho.title)
-                    for ref in trabalho.references:
-                        print_data.append(ref)
-
-                save_scraper_data(result, user_id, project_id)
-                
-                response_data = {
-                    'content': print_data,
-                    'status': 'ok',
-                }
-                response = JsonResponse(response_data)
-                return response
-        except Exception as e:
-            traceback.print_exc()
-            response_data = {
-                'content': result,
-                'status': 'ok',
-            }
-            return (e)
-    #return render(request, 'test/scraper.html',{'works': result})
-    return render(request, 'test/scraper.html')
-
-
 
 
 def graph_test(request):

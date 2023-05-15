@@ -8,6 +8,7 @@ from itertools import combinations
 #from selenium import webdriver
 import pandas as pd
 import requests
+from concurrent.futures import ThreadPoolExecutor
 #import teste
 from bs4 import BeautifulSoup
 from neo4j import GraphDatabase
@@ -208,11 +209,22 @@ def scrape_sbc_event(url):
 		trabalhos.append(w)
 	return trabalhos	
 
+'''
+similarity status: 
+	no_similarity_done
+	similarity_done
+	in_progress
+	complete
+'''
 def save_scraper_data(lista_trabalhos, user_id, project_id):
 	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	try:
 		with driver.session() as session: 
 			tx = session.begin_transaction()
+			query = "CREATE (f:simil_flag {status:$status, id:$id, user_id:$user_id, project_id:$project_id})"
+			simil_flag_id = str(uuid.uuid4())
+			tx.run(query, status='no_similarity_done', id=simil_flag_id, user_id=user_id, project_id=project_id)
+			
 			for index, element in enumerate(lista_trabalhos):
 				#element = lista_trabalhos[0]
 				work_title = element.title
@@ -247,12 +259,13 @@ def string_similarity(str1, str2):
     return result.ratio()
 
 def compare_refs(user_id, project_id):
-	st = time.time()
+	q=f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}})-[s:similar_to]->(r:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.id as a_ref_id, t.title as a_title, r.id as b_ref, r.title as b_title, s.value as similarity order by t.title""" 
+	print (q)
 	#trabalhos = lista_trabalhos
 	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	try:
 		with driver.session() as session: 
-			q = f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.title as title, t.tipo as tipo, id(t) as id limit 100"""
+			q = f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.title as title, t.tipo as tipo, t.id as id"""
 			result = session.run(q)
 			lista_trabalhos = []
 			for record in result:
@@ -263,40 +276,71 @@ def compare_refs(user_id, project_id):
 		return(e)
 	
 	simil = []
-	num_trabalhos = len(lista_trabalhos)
 	strings_dict = {}
 
+	st = time.time()
 	for lst in lista_trabalhos:
 		#strings_dict[lst[0]] = {'tipo': lst[1], 'id': lst[2]}
 		strings_dict[lst[0]] = (lst[1], lst[2])
-
+	
 	for str1, str2 in combinations(strings_dict.keys(), 2):
 		similarity = (string_similarity(str1,str2))
-		if similarity > 0.65:
+		if similarity > 0.7:
 			#print(similarity, str1,"|||", str2)
 			#print(f"Add info for str1: {strings_dict[str1]}")
 			#print(f"Add info for str2: {strings_dict[str2]}")
 			tup = (similarity, strings_dict[str1], strings_dict[str2])
 			simil.append(tup)
+	et = time.time()
+	#print ("time = ", et - st)
 
-	print(simil)
-	'''for str1, str2 in combinations(lista_trabalhos, 2):
-		similarity = (string_similarity(str1,str2))
-		if similarity > 0.75:
-				#print(similarity, str1,"|||", str2)
-				tup = (similarity, str1, str2)
-				simil.append(tup)'''
+	try:
+		#salva as similaridades
+		with driver.session() as session: 
+			for index, element in enumerate(simil):
+				first_work = element[1][1]
+				second_work = element[2][1]
+				similarity = element[0]
+				#print (element[1][1], element[2][1])
+				q = f"""MATCH (t:trabalho {{id:'{first_work}'}}), (r:trabalho{{id:'{second_work}'}}) CREATE (t)-[s:similar_to{{value:'{similarity}'}}]->(r) return s"""
+				result = session.run(q)
 
-	"""for i in range(num_trabalhos):
-		for k in range (num_trabalhos):
-			str1 = lista_trabalhos[i][0]
-			str2 = lista_trabalhos[k][0]
-			similarity = (string_similarity(str1,str2))
-			if similarity > 0.75:
-				tup = (similarity, str1, str2)
-				simil.append(tup)"""
+	except Exception as e:
+		traceback.print_exc()
+		return(e)
+
+
+def return_simil(user_id, project_id):
+	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+	with driver.session() as session: 
+		q=f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}})-[s:similar_to]->(r:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.id as a_ref_id, t.title as a_title, r.id as b_ref, r.title as b_title, s.value as similarity order by t.title""" 
+		result = session.run(q)
+		val1=[]
+		for record in result:
+			#val1.append(record['a_ref_id'])
+			val1.append(record.values())      
+		for index,element in enumerate(val1):
+			simil = round(float(element[4]),3)
+			val1[index][4] = simil
+		return val1
+'''
+	try:
+		with driver.session() as session: 
+			q = f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.title as title, t.tipo as tipo, id(t) as id"""
+			result = session.run(q)
+			lista_trabalhos = []
+			for record in result:
+				lista_trabalhos.append(record.values())
+
+			query = "MATCH (f:simil_flag {user_id:$user_id, project_id:$project_id}) set f.status = $status"
+			result = session.run(query, status='gordo', user_id=user_id, project_id=project_id)
+			
+
+	except Exception as e:
+		traceback.print_exc()
+		return(e)'''
 	
-	"""
+"""
 	simil = []
 	num_trabalhos = len(trabalhos)
 	io=0
