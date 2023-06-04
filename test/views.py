@@ -40,7 +40,7 @@ def index(request):
             else:
                 project_name = "Nenhum projeto selecionado"
             user_id = request.COOKIES.get('user_id')
-            compare_refs(user_id, project_id)
+            #compare_refs(user_id, project_id)
             return render(request, 'test/index.html', {'projects': project_list, 'project_id': project_name})
     except Exception as e:
         traceback.print_exc()
@@ -182,7 +182,8 @@ def set_project(request):
                 return HttpResponse(e)
     else:
         return redirect('login_user')
-    
+  
+  
 def scraper(request):
     if (not request.user.is_authenticated):
         return render(request, 'test/login.html')
@@ -213,7 +214,7 @@ def scraper(request):
                         print_data.append(ref)
 
                 save_scraper_data(result, user_id, project_id)
-                compare_refs(user_id, project_id)
+                #compare_refs(user_id, project_id)
                 response_data = {
                     'content': print_data,
                     'status': 'ok',
@@ -240,11 +241,13 @@ def similarities(request): #simil result?
     project_id = request.COOKIES.get('project_id')
     if (not project_id):
         return redirect('index')
-    q=f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}})-[s:similar_to]->(r:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.id as a_ref_id, t.title as a_title, r.id as b_ref, r.title as b_title, s.value as similarity order by t.title""" 
-    print(q)
+    
+    #q=f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}})-[s:similar_to]->(r:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.id as a_ref_id, t.title as a_title, r.id as b_ref, r.title as b_title, s.value as similarity order by t.title""" 
+    #print(q)
     result = return_simil(user_id, project_id)
     return render(request, 'test/similarities.html',{'refs': result})
    
+  
   
 @csrf_exempt 
 def backend_test(request):
