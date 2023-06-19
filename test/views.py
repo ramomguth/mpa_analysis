@@ -249,7 +249,6 @@ def similarities(request): #simil result?
    
   
   
-@csrf_exempt 
 def backend_test(request):
     #post_data = json.loads(request.body)
     #my_list = [(key, value) for key, value in post_data.items()]

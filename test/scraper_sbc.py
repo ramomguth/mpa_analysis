@@ -5,8 +5,11 @@ import uuid
 from dataclasses import dataclass
 import traceback
 from itertools import combinations
+import itertools
 #from selenium import webdriver
 import pandas as pd
+import numpy as np
+from sklearn.cluster import AgglomerativeClustering
 import requests
 from concurrent.futures import ThreadPoolExecutor
 #import teste
@@ -230,24 +233,48 @@ def return_simil(user_id, project_id):
 			#val1.append(record['a_ref_id'])
 			ref_list.append(record.values())  
 			    
-		'''for index,element in enumerate(ref_list):
+		for index,element in enumerate(ref_list):
 			simil = round(float(element[4]),3)
-			ref_list[index][4] = simil'''
+			ref_list[index][4] = simil
 		
 		strings_dict = {}
-		for lst in ref_list:
+		copy = []
+		for index,lst in enumerate(ref_list):
 			#strings_dict[lst[0]] = {'tipo': lst[1], 'id': lst[2]}
-			strings_dict[lst[1]] = (lst[1], lst[3])
+			strings_dict[index] = (lst[1], lst[3])
+			stry = (lst[1], lst[3])
+			copy.append(stry)
 			#salva as informacoes pertinentes a cada referencia
-		
-		'''for str1, str2 in combinations(strings_dict.keys(), 2):
-			
+		flat_list = list(itertools.chain.from_iterable(copy))
+		#for index, elem in enumerate(flat_list):
+			#print( index, elem)
+		i=0
+		aggregate_list = []
+		for str1, str2 in combinations(flat_list, 2):
+			i+=1
 			similarity = (string_similarity(str1,str2))
 			similarity = round(similarity,3)
 			if similarity > 0.7:
-				print(similarity, str1,"|||", str2)'''
-		#aggregate_list = []
-		print(ref_list[0])
+				#print("i= ",i, "/", similarity, str1,"|||", str2)
+				stry = (similarity,str1,str2)
+				aggregate_list.append(stry)
+		
+
+		similarity_matrix = np.zeros((len(flat_list), len(flat_list)))
+
+		for i in range(len(flat_list)):
+			for j in range(len(flat_list)):
+				similarity_matrix[i, j] = string_similarity(flat_list[i], flat_list[j])
+
+		# perform hierarchical clustering
+		clustering_model = AgglomerativeClustering(affinity='precomputed', linkage='average', distance_threshold=0.3, n_clusters=None)
+		clustering_model = clustering_model.fit(1 - similarity_matrix)
+
+		grouped_list = [[] for _ in range(clustering_model.n_clusters_)]
+
+		for idx, label in enumerate(clustering_model.labels_):
+			grouped_list[label].append(flat_list[idx])
+		
 		
 		return ref_list
 	

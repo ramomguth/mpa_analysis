@@ -69,6 +69,9 @@
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
       }
+      .selected {
+        background-color: lightblue; /* Change the background color to your desired selection color */
+      }
     </style>
 
     
@@ -171,12 +174,12 @@
 
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">Teste</h1>
-       
+        <h2 class="h2">Tabela de referencias</h2> 
       </div>
-      <h2>Tabela de referencias</h2>
-      <h3>Modo de uso:</h3>
-      <p> 
+    
+      <h3>Modo de uso: Selecione cada par de referencias que sejam similares</h3>
+      <p>
+      {% csrf_token %}
       <div class="table-responsive">
         <table class="table table-striped table-sm" id="mytable">
           <thead>
@@ -186,19 +189,19 @@
               <th scope="col">ID ref 2</th>
               <th scope="col">Titulo</th>
               <th scope="col">Simil</th>
-              <th scope="col">Check</th>
             </tr>
           </thead>
           <tbody>
             {% for record in refs %}
             <tr>
-              <td contenteditable ="true">{{ record.0 }}</td>
-              <td contenteditable ="true">{{ record.1 }}</td>
-              <td contenteditable ="true">{{ record.2 }}</td>
-              <td contenteditable ="true">{{ record.3 }}</td>
-              <td contenteditable ="true">{{ record.4 }}</td>
-              <td> <input type="checkbox" data-referenciaa="{{ record.0 }}" data-referenciab="{{ record.2 }}"  class="checkbox"> </td>
+              <td >{{ record.0 }}</td>
+              <td style="text-align: center;"> {{ record.1 }} <br> <input type="checkbox" name="main-ref-checkbox" class="checkbox" data-refdata="{{ record.0 }}" data-refname="{{ record.1 }}"></td>
+              <td >{{ record.2 }}</td>
+              <td style="text-align: center;" >{{ record.3 }} <br> <input type="checkbox" name="main-ref-checkbox" class="checkbox" data-refdata="{{ record.2 }}" data-refname="{{ record.3 }}"></td>
+              <td >{{ record.4 }}</td>
+              <!--<td> <input type="checkbox" data-referenciaa="{{ record.0 }}" data-referenciab="{{ record.2 }}"  class="checkbox"> </td> -->
             </tr>
+             
           {% endfor %}
           </tbody>
         </table>
@@ -215,21 +218,22 @@
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-body">
-              <p>Insira o novo ID das referencias</p>
+              <p>Utilizar a seguinte referencia como principal para todas as selecionadas?</p>
               <select class="form-select" aria-label="Default select example" id="modal-select-options">
                 <option selected>Open this select menu</option>
                 <option value="1">One</option>
               </select>              
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-              <button type="button" class="btn btn-primary" id="modal-save">Save changes</button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+              <button type="button" class="btn btn-primary" id="modal-save">Salvar mudanças</button>
             </div>
           </div>
         </div>
       </div>
       <!-- Button trigger modal -->
-      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#meu-modal" id="confirm"> Confirm </button>
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#meu-modal" id="confirm"> Confirmar </button>
+      <button type="button" class="btn btn-primary" id="finalizar"> Finalizar Similaridades </button>
 
       <script>
         // Get the submit button
@@ -245,15 +249,29 @@
         // Listen for clicks on the submit button
         var global_selected = [];
 
+        const ref_checkboxes = document.querySelectorAll('input[name="main-ref-checkbox"]');
+            ref_checkboxes.forEach((checkbox) => {
+              checkbox.addEventListener('click', () => {
+                ref_checkboxes.forEach((c) => {
+                  if (c !== checkbox) {
+                    c.checked = false;
+                  }
+                });
+              });
+            });
+
         confirmBtn.addEventListener("click", function() {
           // Get the selected content
           var selected = [];
           var modal_html_select = "";
           for (var i = 0; i < checkboxes.length; i++) {
             if (checkboxes[i].checked) {
-              selected.push([checkboxes[i].dataset.referenciaa, checkboxes[i].dataset.referenciab]);
-              modal_html_select = modal_html_select + `<option value="${checkboxes[i].dataset.referenciaa}">${checkboxes[i].dataset.referenciaa}</option>`
-              modal_html_select = modal_html_select + `<option value="${checkboxes[i].dataset.referenciab}">${checkboxes[i].dataset.referenciab}</option>`
+              console.log(checkboxes[i].dataset.refname);
+              console.log(ref_checkboxes);
+
+              selected.push([checkboxes[i].dataset.refdata, checkboxes[i].dataset.refname]);
+              modal_html_select = modal_html_select + `<option value="${checkboxes[i].dataset.refdata}">${checkboxes[i].dataset.refname}</option>`
+              //modal_html_select = modal_html_select + `<option value="${checkboxes[i].dataset.referenciab}">${checkboxes[i].dataset.referenciab}</option>`
             }
           }
           // Display the selected content in the modal
@@ -267,7 +285,8 @@
           let my_data = [];
           my_data.push(modal_value);
           my_data.push(global_selected);
-          let csrftoken = Cookies.get('csrftoken');
+          const csrfToken = document.getElementsByName("csrfmiddlewaretoken")[0].value;
+
          /* pra usar ajax fica res = json.loads(request.POST.get('my_data')) no back
          $.ajax({
             type: "POST",
@@ -298,31 +317,39 @@
 
       </script>
 
-      <script> 
-        $("#stuff").click(function(){
-        
-        /*
-        t_data = {};
-        $("table.table.table-striped.table-sm").find('tr').each(function (i, el) {
-          t_data[i] = [];
-          var $tds = $(this).find('td'),
-              ref_id_1 = $tds.eq(0).text(),
-              value1 = $tds.eq(1).text();
-              ref_id_2 = $tds.eq(2).text(),
-              value2 = $tds.eq(3).text();
-              similarity = $tds.eq(4).text(),
-              new_ref_id = $tds.eq(5).text(),
-          t_data[i][0] = ref_id_1;
-          t_data[i][1] = value1;
-          t_data[i][2] = ref_id_2;
-          t_data[i][3] = value2;
-          t_data[i][4] = similarity;
-          t_data[i][5] = new_ref_id;
-        });
-        */
-      })
-      
+      <script>
+        document.addEventListener('DOMContentLoaded', function() {
+			var table = document.getElementById('mytable');
+			var rows = table.getElementsByTagName('tr');
+		  
+			for (var i = 0; i < rows.length; i++) {
+			  rows[i].addEventListener('click', function() {
+				this.classList.toggle('selected');
+			  });
+			}
+		  
+			var submitBtn = document.getElementById('confirm');
+			submitBtn.addEventListener('click', function() {
+			  var selectedRows = table.getElementsByClassName('selected');
+			  var rowData = [];
+		  
+			  for (var i = 0; i < selectedRows.length; i++) {
+				var cells = selectedRows[i].getElementsByTagName('td');
+				var rowValues = [];
+		  
+				for (var j = 0; j < cells.length; j++) {
+				  rowValues.push(cells[j].innerText);
+				}
+		  
+				rowData.push(rowValues);
+			  }
+			  	console.log(rowData);
+			
+			});
+		  });
+		  
       </script>
+     
     </main>
   </div>
 </div>
