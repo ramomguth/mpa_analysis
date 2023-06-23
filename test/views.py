@@ -249,25 +249,33 @@ def similarities(request): #simil result?
    
   
   
-def backend_test(request):
+def save_similarities(request):
     #post_data = json.loads(request.body)
     #my_list = [(key, value) for key, value in post_data.items()]
     #print(my_list[0][1])
+    if (not request.user.is_authenticated):
+        return redirect('login_user')
+    
+    user_id = request.COOKIES.get('user_id')
+    project_id = request.COOKIES.get('project_id')
+    if (not project_id):
+        return redirect('index')
     
     if request.method == 'POST':
         try:
             #table_data = json.loads(request.POST.get('my_data'))
             post_data = list(json.loads(request.body))
             #table_data = list(table_data.values())
-
+            
             if not post_data[0]:
                 return HttpResponse("Nenhuma mudança encontrada")
             
             main_ref = post_data.pop(0)
             refs_to_alter = list(itertools.chain(*post_data))
-            
-           # for elem in refs_to_alter:
-           #     resp = save_altered_similarities(main_ref,elem)
+           
+            for elem in refs_to_alter:
+                print(elem)
+                resp = save_altered_similarities(main_ref, elem, user_id, project_id)
          
             #if (resp == "ok"):
             return HttpResponse(200)
@@ -276,8 +284,6 @@ def backend_test(request):
         
     return HttpResponse("e")
                 
-
-
 def graph_test(request):
     if request.user.is_authenticated:
         return render(request, 'test/graph.html')

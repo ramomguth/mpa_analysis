@@ -237,7 +237,7 @@ def return_simil(user_id, project_id):
 			simil = round(float(element[4]),3)
 			ref_list[index][4] = simil
 		
-		strings_dict = {}
+		"""strings_dict = {}
 		copy = []
 		for index,lst in enumerate(ref_list):
 			#strings_dict[lst[0]] = {'tipo': lst[1], 'id': lst[2]}
@@ -273,7 +273,7 @@ def return_simil(user_id, project_id):
 		grouped_list = [[] for _ in range(clustering_model.n_clusters_)]
 
 		for idx, label in enumerate(clustering_model.labels_):
-			grouped_list[label].append(flat_list[idx])
+			grouped_list[label].append(flat_list[idx])"""
 		
 		
 		return ref_list

@@ -235,120 +235,128 @@
       <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#meu-modal" id="confirm"> Confirmar </button>
       <button type="button" class="btn btn-primary" id="finalizar"> Finalizar Similaridades </button>
 
-      <script>
-        // Get the submit button
-        var confirmBtn = document.getElementById("confirm");
-        
-        var saveBtn = document.getElementById("modal-save");        
-        // Get the checkboxes
-        var checkboxes = document.querySelectorAll(".checkbox");
+<script>
+	// Get the submit button
+	var confirmBtn = document.getElementById("confirm");
+	var saveBtn = document.getElementById("modal-save");        
+	// Get the checkboxes
+	var checkboxes = document.querySelectorAll(".checkbox");
+	// Get the element where the selected content will be displayed
+	var selectedContent = document.getElementById("modal-select-options");
+	// Listen for clicks on the submit button
+	var global_selected = [];
+	let tudo = [];
+	document.addEventListener('DOMContentLoaded', function() {
+		var table = document.getElementById('mytable');
+		var rows = table.getElementsByTagName('tr');
 
-        // Get the element where the selected content will be displayed
-        var selectedContent = document.getElementById("modal-select-options");
-        
-        // Listen for clicks on the submit button
-        var global_selected = [];
+		for (var i = 0; i < rows.length; i++) {
+			rows[i].addEventListener('click', function() {
+			this.classList.toggle('selected');
+			});
+		}
 
-        const ref_checkboxes = document.querySelectorAll('input[name="main-ref-checkbox"]');
-            ref_checkboxes.forEach((checkbox) => {
-              checkbox.addEventListener('click', () => {
-                ref_checkboxes.forEach((c) => {
-                  if (c !== checkbox) {
-                    c.checked = false;
-                  }
-                });
-              });
-            });
+		var submitBtn = document.getElementById('confirm');
+		submitBtn.addEventListener('click', function() {
+			var selectedRows = table.getElementsByClassName('selected');
+			var rowData = [];
 
-        confirmBtn.addEventListener("click", function() {
-          // Get the selected content
-          var selected = [];
-          var modal_html_select = "";
-          for (var i = 0; i < checkboxes.length; i++) {
-            if (checkboxes[i].checked) {
-              console.log(checkboxes[i].dataset.refname);
-              console.log(ref_checkboxes);
-
-              selected.push([checkboxes[i].dataset.refdata, checkboxes[i].dataset.refname]);
-              modal_html_select = modal_html_select + `<option value="${checkboxes[i].dataset.refdata}">${checkboxes[i].dataset.refname}</option>`
-              //modal_html_select = modal_html_select + `<option value="${checkboxes[i].dataset.referenciab}">${checkboxes[i].dataset.referenciab}</option>`
-            }
-          }
-          // Display the selected content in the modal
-          selectedContent.innerHTML = modal_html_select;
-          global_selected = selected;
-        });
-        
-        saveBtn.addEventListener("click", function() {
-          this.disabled = true;
-          let modal_value = document.getElementById("modal-select-options").value;
-          let my_data = [];
-          my_data.push(modal_value);
-          my_data.push(global_selected);
-          const csrfToken = document.getElementsByName("csrfmiddlewaretoken")[0].value;
-
-         /* pra usar ajax fica res = json.loads(request.POST.get('my_data')) no back
-         $.ajax({
-            type: "POST",
-            url: "/backend_test",
-            data: {my_data: JSON.stringify(my_data)},
-            success: function(response) {
-                // handle the response from the server
-                console.log(my_data);
-                alert(response);
-                //reload windows
-            }
-        });*/
-        my_data = JSON.stringify(my_data);
-        axios.post('/backend_test', my_data)
-        .then(response => {
-          console.log(response);
-          if (response.status === 200) 
-          //location.reload();
-          console.log('ok');
-        })
-        .catch(error => {
-          console.error(error);
-        });
-        
-
-        });
-
-
-      </script>
-
-      <script>
-        document.addEventListener('DOMContentLoaded', function() {
-			var table = document.getElementById('mytable');
-			var rows = table.getElementsByTagName('tr');
-		  
-			for (var i = 0; i < rows.length; i++) {
-			  rows[i].addEventListener('click', function() {
-				this.classList.toggle('selected');
-			  });
-			}
-		  
-			var submitBtn = document.getElementById('confirm');
-			submitBtn.addEventListener('click', function() {
-			  var selectedRows = table.getElementsByClassName('selected');
-			  var rowData = [];
-		  
-			  for (var i = 0; i < selectedRows.length; i++) {
+			for (var i = 0; i < selectedRows.length; i++) {
 				var cells = selectedRows[i].getElementsByTagName('td');
 				var rowValues = [];
-		  
+
 				for (var j = 0; j < cells.length; j++) {
-				  rowValues.push(cells[j].innerText);
+					rowValues.push(cells[j].innerText);
 				}
-		  
 				rowData.push(rowValues);
-			  }
-			  	console.log(rowData);
+			}
 			
+			//console.log(rowData);
+			tudo = rowData;
+		});
+	});
+
+	const ref_checkboxes = document.querySelectorAll('input[name="main-ref-checkbox"]');
+		ref_checkboxes.forEach((checkbox) => {
+			checkbox.addEventListener('click', () => {
+				ref_checkboxes.forEach((c) => {
+				if (c !== checkbox) {
+					c.checked = false;
+				}
+				});
 			});
-		  });
-		  
-      </script>
+		});
+
+	confirmBtn.addEventListener("click", function() {
+		// Get the selected content
+		var selected = [];
+		var modal_html_select = "";
+		for (var i = 0; i < checkboxes.length; i++) {
+			if (checkboxes[i].checked) {
+				//console.log(checkboxes[i].dataset.refname);
+				//console.log(ref_checkboxes);
+
+				selected.push([checkboxes[i].dataset.refdata, checkboxes[i].dataset.refname]);
+				modal_html_select = modal_html_select + `<option value="${checkboxes[i].dataset.refdata}">${checkboxes[i].dataset.refname}</option>`
+				//modal_html_select = modal_html_select + `<option value="${checkboxes[i].dataset.referenciab}">${checkboxes[i].dataset.referenciab}</option>`
+			}
+		}
+		// Display the selected content in the modal
+		selectedContent.innerHTML = modal_html_select;
+		global_selected = selected;
+		//console.log("ref principa= ",global_selected);
+	});
+
+	saveBtn.addEventListener("click", function() {
+		this.disabled = true;
+		//let modal_value = document.getElementById("modal-select-options").value;
+		let my_data = [];
+		//my_data.push(modal_value);
+		my_data.push(global_selected);
+		my_data.push(tudo);
+		const csrfToken = document.getElementsByName("csrfmiddlewaretoken")[0].value;
+		//console.log("aqui+",tudo);
+		
+
+		my_data = JSON.stringify(my_data);
+		console.log(my_data);
+		axios({
+			method: "post",
+			url: "/save_similarities",
+			data: my_data,
+			headers: { 
+				'Content-Type': 'application/json',
+				'X-CSRFToken': csrfToken
+		   }
+		})
+		.then(response => {
+			console.log(response);
+		if (response.status === 200) 
+			//location.reload();
+			console.log('ok');
+		})
+		.catch(error => {
+			console.error(error);
+		});
+});
+	/*
+	pra usar ajax fica res = json.loads(request.POST.get('my_data')) no back
+	$.ajax({
+		type: "POST",
+		url: "/backend_test",
+		data: {my_data: JSON.stringify(my_data)},
+		success: function(response) {
+			// handle the response from the server
+			console.log(my_data);
+			alert(response);
+			//reload windows
+		}
+	});
+
+	*/        
+
+	
+</script>
      
     </main>
   </div>
