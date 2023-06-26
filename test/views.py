@@ -271,18 +271,28 @@ def save_similarities(request):
                 return HttpResponse("Nenhuma mudança encontrada")
             
             main_ref = post_data.pop(0)
-            refs_to_alter = list(itertools.chain(*post_data))
+            main_ref = main_ref[0][0] #por alguma razao vem como lista de lista
+            info_to_alter = list(itertools.chain(*post_data)) #vem com infos desnecessarias
+            refs_to_alter = [[sublist[0], sublist[2]] for sublist in info_to_alter] #pega so os ids das refer
            
-            for elem in refs_to_alter:
-                print(elem)
-                resp = save_altered_similarities(main_ref, elem, user_id, project_id)
-         
-            #if (resp == "ok"):
-            return HttpResponse(200)
+            flattened_list = [item for sublist in refs_to_alter for item in sublist] # Creating a set to remove duplicates
+
+            unique_refs = list(set(flattened_list))
+            unique_refs.remove(main_ref)
+            
+            
+            st = time.time()
+            #for elem in unique_refs:
+            resp = save_altered_similarities(main_ref, unique_refs, user_id, project_id)
+            et = time.time()
+            print ("time = ", et - st)
+
+            if (resp == "ok"):
+                return HttpResponse(200)
         except Exception as e:
+                traceback.print_exc()
                 return HttpResponse(e)
         
-    return HttpResponse("e")
                 
 def graph_test(request):
     if request.user.is_authenticated:

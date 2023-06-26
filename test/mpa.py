@@ -4,43 +4,58 @@ from igraph import Graph
 import numpy as np
 import pandas as pd
 import json
+import traceback
 
 
-def save_altered_similarities(main_ref, params):
+def save_altered_similarities(main_ref, params, user_id, project_id):
     driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
-    id_ref_1 = params[0]
-    id_ref_2 = params[1]
+    #ref_id = params
+    #id_ref_2 = params[2]
     id_new_ref = main_ref
-    
+
+    """
+    nova logica
+    1 - com o id da ref a ser alterada, encontrar quem referencia ela
+    2 - deletar essa referencia e seus relacionamentos (similaridades e referenciamentos)
+    3 - criar o novo relacionamento entre a principal e quem referenciava a deletada"""
     try:
         with driver.session() as session: 
-            # 1 - encontrar o trabalho da ref a ser alterada
-            q = f"""MATCH (a:Trabalho)-[c:Referencia]->(b:Reference{{ref_id:'{id_ref_2}'}}) return a.id"""
-            id_work_to_alter = session.run(q).single().value()
+            tx = session.begin_transaction()
+            for ref_id in params:
+                # 1 - atualizar o status da flag de similaridade
+                query = "MATCH (f:simil_flag {user_id:$user_id, project_id:$project_id}) set f.status = 'in_progress'"
+                tx.run (query, user_id=user_id, project_id=project_id)
+                
+                # 2 - encontrar o trabalho da ref a ser alterada
+                query = """MATCH (a:trabalho{user_id:$user_id, project_id:$project_id})-[r:referencia]->(b:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) return a.id"""
+                id_work_to_alter = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id)
+                id_work_to_alter = id_work_to_alter.single().value()
+                print(id_work_to_alter, "references", ref_id)
 
-            #2 deletar o relacionamento de similaridade
-            q = f"""MATCH (a:Reference{{ref_id:'{id_ref_1}'}})-[c:Similar_to]->(b:Reference{{ref_id:'{id_ref_2}'}}) delete c"""
-            result = session.run(q)
+                #3 deletar a ref antiga propriamente com seus relacionamentos
+                query = "MATCH (t:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) detach delete t"
+                result1 = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id)
+                print("deletado", ref_id)
 
-            #3 deletar a ref antiga propriamente
-            q = f"""MATCH (a:Reference{{ref_id:'{id_ref_2}'}}) detach delete a"""
-            result = session.run(q)
+                '''#4 diminuir o num de referencias em 1 do trabalho que teve a referencia deletada
+                q = f"""MATCH (t:Trabalho{{id:'{id_work_to_alter}'}}) return toInteger(t.num_ref) - 1 as a"""
+                result = session.run(q)
+                k = result.value()[0]
+                
+                #5 continuacao do 4
+                q = f"""MATCH (t:Trabalho{{id:'{id_work_to_alter}'}}) set t.num_ref = '{k}'"""
+                result = session.run(q)'''
 
-            #4 diminuir o num de referencias em 1 do trabalho que teve a referencia deletada
-            q = f"""MATCH (t:Trabalho{{id:'{id_work_to_alter}'}}) return toInteger(t.num_ref) - 1 as a"""
-            result = session.run(q)
-            k = result.value()[0]
-            
-            #5 continuacao do 4
-            q = f"""MATCH (t:Trabalho{{id:'{id_work_to_alter}'}}) set t.num_ref = '{k}'"""
-            result = session.run(q)
+                #6 criar o novo relacionamento de referencia
+                query = "MATCH (t:trabalho{id:$id_work_to_alter, user_id:$user_id, project_id:$project_id}), (r:trabalho{id:$id_new_ref, user_id:$user_id, project_id:$project_id}) CREATE (t)-[:referencia]->(r)"
+                result2 = tx.run(query, id_work_to_alter=id_work_to_alter, id_new_ref=id_new_ref, user_id=user_id, project_id=project_id)
+                print("deu bom")
 
-            #6 criar o novo relacionamento de referencia
-            q = f"""MATCH (t:Trabalho {{id:'{id_work_to_alter}'}}), (r:Reference{{ref_id:'{id_new_ref}'}}) CREATE (t)-[:Referencia]->(r)"""
-            result = session.run(q)
-
+            tx.commit()
             return ("ok")
     except Exception as e:
+        tx.rollback()
+        traceback.print_exc()
         return(e)
 
     

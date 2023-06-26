@@ -206,6 +206,7 @@
           </tbody>
         </table>
       </div>
+      
       <style>
         #mytable td:nth-child(1),
         #mytable th:nth-child(1),
@@ -214,6 +215,7 @@
           display: none;
         }
       </style>
+    
       <div class="modal" id="meu-modal" tabindex="-1">
         <div class="modal-dialog">
           <div class="modal-content">
@@ -332,8 +334,7 @@
 		.then(response => {
 			console.log(response);
 		if (response.status === 200) 
-			//location.reload();
-			console.log('ok');
+			location.reload();
 		})
 		.catch(error => {
 			console.error(error);
