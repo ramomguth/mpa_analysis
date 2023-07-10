@@ -120,12 +120,6 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="http://127.0.0.1:8000/register/">
-              <span data-feather="users" class="align-text-bottom"></span>
-              register
-            </a>
-          </li>
-          <li class="nav-item">
             <a class="nav-link" href="#">
               <span data-feather="bar-chart-2" class="align-text-bottom"></span>
               Reports
@@ -204,11 +198,17 @@
           {% endfor %}
           </tbody>
         </table>
+      </div>
 
         <button type="button" class="btn btn-primary" id="select-project">Selecionar projeto</button>
+        <a href="http://127.0.0.1:8000/create_project/">
+          <button type="button" class="btn btn-primary" id="create-project">Criar projeto</button>
+        </a>
+
         <p> </p>
         {% csrf_token %}
         <h4>Projeto atual = {{project_id}} </h4>
+
         <script>
             const checkboxes = document.querySelectorAll('input[name="project-checkbox"]');
             checkboxes.forEach((checkbox) => {
@@ -267,7 +267,7 @@
             
         });
         </script>
-      </div>
+      
   
       </div>
     </main>

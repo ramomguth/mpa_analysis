@@ -206,6 +206,7 @@
       <script>
         var submiturl = document.getElementById("submit-url");
         submiturl.addEventListener("click", function (e) {
+          submiturl.value = "Processando";
           let event_url = document.getElementById("scrape-url").value;
           const csrfToken = document.getElementsByName("csrfmiddlewaretoken")[0].value;
           
@@ -222,8 +223,7 @@
             })
             .then(response => {
               if (response.status === 200) {
-                console.log(response.data.content);
-                console.log(response.content);
+                submiturl.value = "Foram encontrados "+ response.data.size + " trabalhos";
                 const worksTable = document.getElementById('works-table');
                 const tbody = worksTable.querySelector('tbody');
               

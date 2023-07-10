@@ -72,6 +72,11 @@
       .selected {
         background-color: lightblue; /* Change the background color to your desired selection color */
       }
+      .break-word {
+        white-spece: normal;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
     </style>
 
     
@@ -221,10 +226,11 @@
           <div class="modal-content">
             <div class="modal-body">
               <p>Utilizar a seguinte referencia como principal para todas as selecionadas?</p>
-              <select class="form-select" aria-label="Default select example" id="modal-select-options">
+              <p id="primary-ref-text" class="text-break"> </p>
+              <!--<select class="form-select" aria-label="Default select example" id="modal-select-options">
                 <option selected>Open this select menu</option>
                 <option value="1">One</option>
-              </select>              
+              </select>   -->           
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
@@ -245,6 +251,7 @@
 	var checkboxes = document.querySelectorAll(".checkbox");
 	// Get the element where the selected content will be displayed
 	var selectedContent = document.getElementById("modal-select-options");
+  let selectedContent2 = document.getElementById("primary-ref-text");
 	// Listen for clicks on the submit button
 	var global_selected = [];
 	let tudo = [];
@@ -304,7 +311,8 @@
 			}
 		}
 		// Display the selected content in the modal
-		selectedContent.innerHTML = modal_html_select;
+		//selectedContent.innerHTML = modal_html_select;
+    selectedContent2.innerHTML = modal_html_select;
 		global_selected = selected;
 		//console.log("ref principa= ",global_selected);
 	});
@@ -340,6 +348,30 @@
 			console.error(error);
 		});
 });
+
+    let finish_button = document.getElementById("finalizar");
+    let finish_flag = 1;
+    finish_flag = JSON.stringify(finish_flag);
+    const csrfToken = document.getElementsByName("csrfmiddlewaretoken")[0].value;
+	finish_button.addEventListener('click', function() {
+    axios({
+        method: "post",
+        url: "/finish_similarities",
+        data: finish_flag,
+        headers: { 
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => {
+            if (response.data.status === "ok") 
+                console.log(response.data);
+                finish_button.innerHTML = "Processo concluído com sucesso!"
+        })
+        .catch(error => {
+            console.error(error);
+        });
+    });
 	/*
 	pra usar ajax fica res = json.loads(request.POST.get('my_data')) no back
 	$.ajax({

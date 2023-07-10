@@ -163,7 +163,6 @@ def create_project(request):
             return (e)
    
 
-
 def set_project(request):
     if (request.user.is_authenticated and request.method == 'POST'):
         post_data = list(json.loads(request.body))
@@ -216,6 +215,7 @@ def scraper(request):
                 save_scraper_data(result, user_id, project_id)
                 #compare_refs(user_id, project_id)
                 response_data = {
+                    'size': len(print_data),
                     'content': print_data,
                     'status': 'ok',
                 }
@@ -293,7 +293,33 @@ def save_similarities(request):
                 traceback.print_exc()
                 return HttpResponse(e)
         
-                
+
+def finish_similarities(request):
+    if request.method == 'POST':
+        try:
+            post_data = json.loads(request.body)
+            driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+            user_id = request.COOKIES.get('user_id')
+            project_id = request.COOKIES.get('project_id')
+
+            with driver.session() as session:
+                tx = session.begin_transaction()
+                query = "MATCH (f:simil_flag {user_id:$user_id, project_id:$project_id}) set f.status = 'complete'"
+                result = tx.run (query, user_id=user_id, project_id=project_id)
+              
+                query = "MATCH (a:trabalho {user_id:$user_id, project_id:$project_id})-[s:similar_to]->(b:trabalho {user_id:$user_id, project_id:$project_id}) delete s"
+                result = tx.run (query, user_id=user_id, project_id=project_id)
+                resp = {
+                    'status': 'ok'
+                }
+                tx.commit()
+                return JsonResponse(resp)
+        except Exception as e:
+            tx.rollback()
+            traceback.print_exc()
+            return HttpResponse(e)
+
+
 def graph_test(request):
     if request.user.is_authenticated:
         return render(request, 'test/graph.html')

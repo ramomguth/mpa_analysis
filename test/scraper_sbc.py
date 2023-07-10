@@ -223,6 +223,9 @@ def return_simil(user_id, project_id):
 	with driver.session() as session: 
 		q = f"""MATCH (f:simil_flag {{user_id:'{user_id}', project_id:'{project_id}'}}) return f.status"""
 		result = session.run(q).single().value()
+		""" tem um outro caso, se o usuario comecou o processo de similaridade
+		e fez um scraping novo, precisa comecar tudo do zero
+		mas e se ja teve similaridade salva e as referencias apontam para uma so?"""
 		if result == 'no_similarity_done': 
 			compare_refs(user_id, project_id)
 
@@ -237,6 +240,7 @@ def return_simil(user_id, project_id):
 			simil = round(float(element[4]),3)
 			ref_list[index][4] = simil
 		
+		return ref_list
 		"""strings_dict = {}
 		copy = []
 		for index,lst in enumerate(ref_list):
@@ -276,7 +280,7 @@ def return_simil(user_id, project_id):
 			grouped_list[label].append(flat_list[idx])"""
 		
 		
-		return ref_list
+		
 	
 
 	
