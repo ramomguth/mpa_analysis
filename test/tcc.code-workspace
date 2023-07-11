@@ -5,6 +5,7 @@
 		}
 	],
 	"settings": {
-		"prettier.useTabs": true
+		"prettier.useTabs": true,
+		"prettier.tabWidth": 4
 	}
 }

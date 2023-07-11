@@ -335,21 +335,151 @@ def get_graph_data(request):
         return JsonResponse(result, safe=False)
 
 def mpa(request):
-    '''
-    if request.user.is_authenticated:
+    if (not request.user.is_authenticated):
+        return redirect('login_user')
+    
+    if request.method == 'GET':
+        return render(request, 'test/mpa.html')
+    
+    user_id = request.COOKIES.get('user_id')
+    project_id = request.COOKIES.get('project_id')
+    if (not project_id):
+        return redirect('index')
+    if request.method == 'POST':
+        try:
+            post_data = json.loads(request.body)
+            tipo = post_data[0]
+            make_mpa(tipo)
+
+            return HttpResponse("ok")
+            """ driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+            with driver.session() as session: 
+                result = session.run("MATCH (t:Trabalho)-[s:Referencia]->(r:Reference) return t.id as citing, r.ref_id as cited limit 20")
+                #for r in result:
+                #    print(r.values())
+                citation_data = pd.DataFrame([r.data() for r in result])
+                G = nx.from_pandas_edgelist(citation_data, source='citing', target='cited', create_using=nx.DiGraph())"""
+        except Exception as e:
+            traceback.print_exc()
+            return HttpResponse(e)
+
+
+def make_mpa(tipo):
+    try:
         driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
         with driver.session() as session: 
-            result = session.run("MATCH (t:Trabalho)-[s:Referencia]->(r:Reference) return t.id as citing, r.ref_id as cited limit 20")
-            #for r in result:
-            #    print(r.values())
-            citation_data = pd.DataFrame([r.data() for r in result])
-        G = nx.from_pandas_edgelist(citation_data, source='citing', target='cited', create_using=nx.DiGraph())
+            result = session.run("match (s:trabalho {user_id:$user_id, project_id:$project_id})-[:referencia]->(d:trabalho {user_id:$user_id, project_id:$project_id}) return s.id as source_id, s.title as source_name, d.id as target_id, d.title as target_name") #match (s)-[:Referencia]->(d) return id(s) as source_id, s.name as source_name, id(d) as target_id, d.name as target_name
+            data = [record for record in result]
+            
+            sources = [record['source_id'] for record in data]
+            targets = [record['target_id'] for record in data]
+            comb = list(zip(sources, targets))
 
-        return render(request, 'test/mpa.html')
-    else: 
-    '''
-    return render(request, 'test/mpa.html')
+            result = session.run ("match (s) return id(s) as source_id, s.name as source_name")
+            data = [record for record in result]
+            sources_ids = [record['source_id'] for record in data]
+            sources_names = [record['source_name'] for record in data]
+            
+            g = ig.Graph(directed=True)
+            g.add_vertices(sources_ids)
+            for index, element in enumerate(sources_names):
+                g.vs[index]["name"] = element
+            g.add_edges(comb)
+            g.vs["label"] = g.vs["name"]
+    
+    except Exception as e:
+        traceback.print_exc()
+        return (e)
+    
+def get_mpa_data(request):
+    driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+    with driver.session() as session: 
+        result = session.run("match (s)-[:Referencia]->(d) return id(s) as source_id, s.name as source_name, id(d) as target_id, d.name as target_name") #match (s)-[:Referencia]->(d) return id(s) as source_id, s.name as source_name, id(d) as target_id, d.name as target_name
+        data = [record for record in result]
+        
+        sources = [record['source_id'] for record in data]
+        targets = [record['target_id'] for record in data]
+        comb = list(zip(sources, targets))
 
+        ''' result = session.run ("match (s) return id(s) as source_id, s.name as source_name")
+        data = [record for record in result]
+        sources_ids = [record['source_id'] for record in data]
+        sources_names = [record['source_name'] for record in data]
+        
+        g = ig.Graph(directed=True)
+        g.add_vertices(sources_ids)
+        for index, element in enumerate(sources_names):
+            g.vs[index]["name"] = element
+        g.add_edges(comb)
+        g.vs["label"] = g.vs["name"]'''
+   
+        """
+        # define the start and end vertices, and the specific edge to include
+        sinks = [v.index for v in g.vs if g.outdegree(v.index) == 0]
+        primary_sources = [v.index for v in g.vs if g.indegree(v.index) == 0]
+        edge_list = g.get_edgelist()
+
+        # find all simple paths between start and end vertices
+        for index,edge in enumerate(edge_list):
+            all_paths = []
+            current_node = edge_list[index][1]  #tem o no de destino, tipo c->e, e eh o destino
+            #print("edge = ",g.vs[edge[0]]['name'],g.vs[edge[1]]['name'])
+            predecessors = []
+            unique_pred = []
+            find_all_predecessors(g, current_node, predecessors)
+            for p in predecessors:
+                unique_pred.append(p.index) #p["name"]
+            unique_pred = list(set(unique_pred))
+
+            for elem in unique_pred:
+                for s in sinks:
+                    paths = g.get_all_simple_paths(elem, s, mode="out")
+                    all_paths.extend(paths)
+                #all_paths = g.get_all_simple_paths(g.vs.find(0), g.vs.find(name=end_vertex).index, mode="out")
+                
+            #print("todos caminhos", all_paths)  
+            paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
+                #print("caminhos com o escolhido = ",len(paths_with_edge))
+                    
+            g.es[index]["SPLC"] = len(paths_with_edge)
+            
+        """
+        splc(g)
+        #ig.plot(g, vertex_label=l.vs["label"], target="l.svg")
+        ig.plot(g, layout="kk", edge_label=g.es["SPLC"], target="g.svg")
+        
+        # Calculate the longest path considering 'SPLC' attribute
+        longest_path = []
+        max_length = 0
+        longest_edge_path = []
+
+        visited = [False] * g.vcount()
+
+        """for v in range(g.vcount()):
+            path, length = longest_path_dfs(g, v, visited, [], 0, longest_path, max_length)
+            if length > max_length:
+                longest_path = path
+                max_length = length"""
+
+        for v in range(g.vcount()):
+            path, edge_path, length = longest_path_dfs(g, v, visited, [], [], 0, longest_path, longest_edge_path, max_length)
+            if length > max_length:
+                longest_path = path
+                longest_edge_path = edge_path
+                max_length = length
+
+        main_path = g.subgraph_edges(longest_edge_path)
+        print("Longest path:", longest_path)
+        print("edge:", longest_edge_path)
+        #print("Longest path length:", max_length)
+        print (main_path)
+        ig.plot(main_path, layout="kk", edge_label=main_path.es["SPLC"], target="main_path.svg")
+
+        return HttpResponse("ok")
+    
+
+'''
+backup
 def get_mpa_data(request):
     driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
     with driver.session() as session: 
@@ -434,5 +564,5 @@ def get_mpa_data(request):
         print (main_path)
         ig.plot(main_path, layout="kk", edge_label=main_path.es["SPLC"], target="main_path.svg")
 
-        return HttpResponse("ok")
+        return HttpResponse("ok")'''
 
