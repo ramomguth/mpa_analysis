@@ -217,7 +217,7 @@
 
 <script>
     $("#draw").click(function(){
-        this.disabled = true;
+        this.disabled = false;
 
 async function getGraphData() {
     const response = await axios.get('/get_mpa_data');

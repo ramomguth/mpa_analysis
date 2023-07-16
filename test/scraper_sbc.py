@@ -190,7 +190,7 @@ def compare_refs(user_id, project_id):
 	for str1, str2 in combinations(strings_dict.keys(), 2):
 		similarity = (string_similarity(str1,str2))
 		similarity = round(similarity,3)
-		if similarity > 0.7:
+		if similarity > 0.65:
 			#print(similarity, str1,"|||", str2)
 			#print(f"Add info for str1: {strings_dict[str1]}")
 			#print(f"Add info for str2: {strings_dict[str2]}")

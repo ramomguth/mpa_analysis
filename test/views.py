@@ -345,11 +345,12 @@ def mpa(request):
     project_id = request.COOKIES.get('project_id')
     if (not project_id):
         return redirect('index')
+    
     if request.method == 'POST':
         try:
             post_data = json.loads(request.body)
             tipo = post_data[0]
-            make_mpa(tipo)
+            make_mpa(tipo, user_id, project_id)
 
             return HttpResponse("ok")
             """ driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
@@ -364,28 +365,76 @@ def mpa(request):
             return HttpResponse(e)
 
 
-def make_mpa(tipo):
+def make_mpa(tipo, user_id, project_id):
     try:
         driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
         with driver.session() as session: 
-            result = session.run("match (s:trabalho {user_id:$user_id, project_id:$project_id})-[:referencia]->(d:trabalho {user_id:$user_id, project_id:$project_id}) return s.id as source_id, s.title as source_name, d.id as target_id, d.title as target_name") #match (s)-[:Referencia]->(d) return id(s) as source_id, s.name as source_name, id(d) as target_id, d.name as target_name
+            query = "match (s:trabalho {user_id:$user_id, project_id:$project_id})-[:referencia]->(d:trabalho {user_id:$user_id, project_id:$project_id}) return id(s) as source_id, s.title as source_name, id(d) as target_id, d.title as target_name" 
+            result = session.run(query, user_id=user_id, project_id=project_id)
             data = [record for record in result]
             
             sources = [record['source_id'] for record in data]
             targets = [record['target_id'] for record in data]
             comb = list(zip(sources, targets))
-
-            result = session.run ("match (s) return id(s) as source_id, s.name as source_name")
+          
+            '''MATCH (n:trabalho)-[:referencia]->(m:trabalho)
+                WHERE NOT (m)-[:referencia]->(:trabalho)
+                WITH n, m
+                MATCH (n)-[r:referencia]->()
+                DELETE n, r, m
+            '''
+            query = "match (s:trabalho {user_id:$user_id, project_id:$project_id}) return id(s) as source_id, s.title as source_name"
+            result = session.run(query, user_id=user_id, project_id=project_id)
             data = [record for record in result]
-            sources_ids = [record['source_id'] for record in data]
-            sources_names = [record['source_name'] for record in data]
+            
+            #isso nao sao sources, sao todos os nos
+            all_nodes_ids = [record['source_id'] for record in data]
+            all_nodes_names = [record['source_name'] for record in data]
             
             g = ig.Graph(directed=True)
-            g.add_vertices(sources_ids)
-            for index, element in enumerate(sources_names):
+            id_to_index = {}
+            for index, node_id in enumerate(all_nodes_ids):
+                g.add_vertex(name=all_nodes_names[index])
+                id_to_index[node_id] = index
+
+            # Add edges to the graph using the mapping.
+            for source_id, target_id in comb:
+                g.add_edge(id_to_index[source_id], id_to_index[target_id])
+
+                    
+            for index, element in enumerate(all_nodes_ids):
                 g.vs[index]["name"] = element
-            g.add_edges(comb)
-            g.vs["label"] = g.vs["name"]
+           
+            g.vs["label"] = g.vs["name"]    
+            
+            splc(g)
+            #ig.plot(g, vertex_label=l.vs["label"], target="l.svg")
+            ig.plot(g, layout="kk", edge_label=g.es["SPLC"], target="g.svg")
+            
+            # Calculate the longest path considering 'SPLC' attribute
+            longest_path = []
+            max_length = 0
+            longest_edge_path = []
+
+            visited = [False] * g.vcount()
+
+            for v in range(g.vcount()):
+                path, edge_path, length = longest_path_dfs(g, v, visited, [], [], 0, longest_path, longest_edge_path, max_length)
+                if length > max_length:
+                    longest_path = path
+                    longest_edge_path = edge_path
+                    max_length = length
+
+            main_path = g.subgraph_edges(longest_edge_path)
+            print("Longest path:", longest_path)
+            print("edge:", longest_edge_path)
+            #print("Longest path length:", max_length)
+            print (main_path)
+            ig.plot(main_path, layout="kk", edge_label=main_path.es["SPLC"], target="main_path.svg")
+
+            #ig.plot(g, layout="kk", target="g2.svg")
+            return HttpResponse("ok")
+
     
     except Exception as e:
         traceback.print_exc()
@@ -400,18 +449,29 @@ def get_mpa_data(request):
         sources = [record['source_id'] for record in data]
         targets = [record['target_id'] for record in data]
         comb = list(zip(sources, targets))
-
-        ''' result = session.run ("match (s) return id(s) as source_id, s.name as source_name")
+        result = session.run ("match (s) return id(s) as source_id, s.name as source_name")
         data = [record for record in result]
         sources_ids = [record['source_id'] for record in data]
         sources_names = [record['source_name'] for record in data]
+        print(sources_names) #tem todos os nos
+
+        '''for i, elem in enumerate(comb):
+                print(i, elem)
+                print(g.vertices())
+                s = elem[0]
+                t = elem[1]
+                g.add_edge(s,t)'''
         
+        '''comb = [('a', 'c'), ('b', 'j'), ('b', 'd'), ('b', 'c'), ('c', 'h'), ('c', 'e'), ('d', 'i'), ('d', 'f'), ('e', 'g'), ('f', 'h'), 
+            ('f', 'i'), ('g', 'h'), ('h', 'k'), ('i', 'm'), ('i', 'l'), ('j', 'm'), ('m', 'n')]'''
+            
         g = ig.Graph(directed=True)
         g.add_vertices(sources_ids)
         for index, element in enumerate(sources_names):
             g.vs[index]["name"] = element
         g.add_edges(comb)
-        g.vs["label"] = g.vs["name"]'''
+        g.vs["label"] = g.vs["name"]
+        return HttpResponse("ok")
    
         """
         # define the start and end vertices, and the specific edge to include
@@ -478,8 +538,9 @@ def get_mpa_data(request):
         return HttpResponse("ok")
     
 
+
+#backup
 '''
-backup
 def get_mpa_data(request):
     driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
     with driver.session() as session: 

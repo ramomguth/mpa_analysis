@@ -12,6 +12,9 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
     #ref_id = params
     #id_ref_2 = params[2]
     id_new_ref = main_ref
+    
+    #PROBLEMAO QUANDO UMA REFERENCIA APONTA PRA UM PRINCIPAL O QUE ACONTECE
+    #https://sol.sbc.org.br/index.php/wit/article/cite/6710/AcmCitationPlugin
 
     """
     nova logica
