@@ -162,9 +162,6 @@ def string_similarity(str1, str2):
     return result.ratio()
 
 def compare_refs(user_id, project_id):
-	q=f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}})-[s:similar_to]->(r:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.id as a_ref_id, t.title as a_title, r.id as b_ref, r.title as b_title, s.value as similarity order by t.title""" 
-	#print (q)
-	#trabalhos = lista_trabalhos
 	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	try:
 		with driver.session() as session: 
@@ -183,7 +180,7 @@ def compare_refs(user_id, project_id):
 
 	st = time.time()
 	for lst in lista_trabalhos:
-		#strings_dict[lst[0]] = {'tipo': lst[1], 'id': lst[2]}
+		strings_dict[lst[0]] = {'tipo': lst[1]}
 		strings_dict[lst[0]] = (lst[1], lst[2])
 		#salva as informacoes pertinentes a cada referencia
 	
@@ -191,6 +188,7 @@ def compare_refs(user_id, project_id):
 		similarity = (string_similarity(str1,str2))
 		similarity = round(similarity,3)
 		if similarity > 0.65:
+			if (strings_dict[str1][0] == 'primario' and strings_dict[str2][0] == 'primario'): continue
 			#print(similarity, str1,"|||", str2)
 			#print(f"Add info for str1: {strings_dict[str1]}")
 			#print(f"Add info for str2: {strings_dict[str2]}")

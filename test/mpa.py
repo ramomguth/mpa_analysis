@@ -11,50 +11,131 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
     driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
     #ref_id = params
     #id_ref_2 = params[2]
-    id_new_ref = main_ref
     
-    #PROBLEMAO QUANDO UMA REFERENCIA APONTA PRA UM PRINCIPAL O QUE ACONTECE
+    
+    print("marquei como main", main_ref)
+    
     #https://sol.sbc.org.br/index.php/wit/article/cite/6710/AcmCitationPlugin
-
+    #implementar o check de que quando o usuario nao finalizou as similaridades nao pode fazer o MPA 
     """
     nova logica
     1 - com o id da ref a ser alterada, encontrar quem referencia ela
     2 - deletar essa referencia e seus relacionamentos (similaridades e referenciamentos)
-    3 - criar o novo relacionamento entre a principal e quem referenciava a deletada"""
+    3 - criar o novo relacionamento entre a principal e quem referenciava a deletada
+    
+    Basicamente tem 4 casos
+    1 - ref com ref, já feito
+    2 - primaria com ref: um principal vai endereçar outro indiretamente
+    principal -> ref -> outro principal
+    3 - marcar ref com principal não pode, ignora o usuario e marca a primaria como principal
+    4 - primaria com primaria: Não pode, deleta a similaridade e da continue foi tratado no compare_refs
+    
+    """
     try:
         with driver.session() as session: 
             tx = session.begin_transaction()
+
+            # 1 - atualizar o status da flag de similaridade
+            query = "MATCH (f:simil_flag {user_id:$user_id, project_id:$project_id}) set f.status = 'in_progress'"
+            tx.run (query, user_id=user_id, project_id=project_id)
+
+            '''
+            caso = 0 -> tudo que foi marcado pelo usuario e referencia secundaria
+            caso = 1 -> o usuario marcou uma referencia primaria como principal
+            caso = 2 -> o usuario marcou uma referencia secundaria como principal e quer alterar para primaria NAO PODE
+            '''
+            caso = 0
+            ref_to_alter = 0
             for ref_id in params:
-                # 1 - atualizar o status da flag de similaridade
-                query = "MATCH (f:simil_flag {user_id:$user_id, project_id:$project_id}) set f.status = 'in_progress'"
-                tx.run (query, user_id=user_id, project_id=project_id)
+                query = "MATCH (a:trabalho{id:$main_ref, user_id:$user_id, project_id:$project_id}),(b:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) return a.tipo as tipo_main, b.tipo as tipo_b"
+                result = tx.run(query, main_ref=main_ref, ref_id=ref_id, user_id=user_id, project_id=project_id).single()
+                #for record in result:   caso nao usar .single() no result precisa fazer isso
+                #    tipo_main = record['tipo_main']
+                #    tipo_b = record['tipo_b']
+                if (result['tipo_main'] != 'referencia'):
+                    caso = 1
+                    break
+                if (result['tipo_b'] != 'referencia'):
+                    caso = 2
+                    ref_to_alter = ref_id
+                    break
+            
+            if (caso == 0):
+                print('caso0')
+                for ref_id in params:
+                    query = "MATCH (a:trabalho{user_id:$user_id, project_id:$project_id})-[r:referencia]->(b:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) return a.id"
+                    id_work_to_alter = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id)
+                    id_work_to_alter = id_work_to_alter.single().value()
+                    print("para alterar", id_work_to_alter)
+
+                    #3 deletar a ref antiga propriamente com seus relacionamentos
+                    query = "MATCH (t:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) detach delete t"
+                    result1 = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id)
+                    print("deletado", ref_id)
+
+                    #4 criar o novo relacionamento de referencia
+                    query = "MATCH (t:trabalho{id:$id_work_to_alter, user_id:$user_id, project_id:$project_id}), (r:trabalho{id:$main_ref, user_id:$user_id, project_id:$project_id}) CREATE (t)-[:referencia]->(r)"
+                    result2 = tx.run(query, id_work_to_alter=id_work_to_alter, main_ref=main_ref, user_id=user_id, project_id=project_id)
+                    print(id_work_to_alter, "referencia", main_ref)
+                    
+
+            '''no caso 1, todas as referencias devem apontar para a principal (que eh do tipo primaria)'''
+            if (caso == 1):
+                for ref_id in params:
+                    query = "MATCH (a:trabalho{user_id:$user_id, project_id:$project_id})-[r:referencia]->(b:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) return a.id as id_to_alter"
+                    result = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id).single()
+                    id_to_alter = result['id_to_alter']
+                    print("para alterar ",id_to_alter)
+
+                    query = "MATCH (t:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) detach delete t"
+                    result1 = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id)
+                    print('deletado ', ref_id)
+
+
+                    query = "MATCH (t:trabalho{id:$id_to_alter, user_id:$user_id, project_id:$project_id}), (r:trabalho{id:$main_ref, user_id:$user_id, project_id:$project_id}) CREATE (t)-[:referencia]->(r)"
+                    result2 = tx.run(query, id_to_alter=id_to_alter, main_ref=main_ref, user_id=user_id, project_id=project_id)
+                    print(id_to_alter, "referencia", main_ref)
+            
+            #no caso 2 todas referencias tambem devem apontar para a referencia primaria, mesmo que o usuario tenha marcado uma secundaria como principal
+            if (caso == 2):
+                params.remove(ref_to_alter)
+                params.append(main_ref)
                 
-                # 2 - encontrar o trabalho da ref a ser alterada
-                query = """MATCH (a:trabalho{user_id:$user_id, project_id:$project_id})-[r:referencia]->(b:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) return a.id"""
-                id_work_to_alter = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id)
-                id_work_to_alter = id_work_to_alter.single().value()
-                print(id_work_to_alter, "references", ref_id)
-
-                #3 deletar a ref antiga propriamente com seus relacionamentos
-                query = "MATCH (t:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) detach delete t"
-                result1 = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id)
-                print("deletado", ref_id)
-
-                '''#4 diminuir o num de referencias em 1 do trabalho que teve a referencia deletada
-                q = f"""MATCH (t:Trabalho{{id:'{id_work_to_alter}'}}) return toInteger(t.num_ref) - 1 as a"""
-                result = session.run(q)
-                k = result.value()[0]
+                for ref_id in params:
+                    query = "MATCH (a:trabalho{user_id:$user_id, project_id:$project_id})-[r:referencia]->(b:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) return a.id as id_to_alter"
+                    result = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id).single()
+                    id_to_alter = result['id_to_alter']
+                    print("para alterar ",id_to_alter)
                 
-                #5 continuacao do 4
-                q = f"""MATCH (t:Trabalho{{id:'{id_work_to_alter}'}}) set t.num_ref = '{k}'"""
-                result = session.run(q)'''
 
-                #6 criar o novo relacionamento de referencia
-                query = "MATCH (t:trabalho{id:$id_work_to_alter, user_id:$user_id, project_id:$project_id}), (r:trabalho{id:$id_new_ref, user_id:$user_id, project_id:$project_id}) CREATE (t)-[:referencia]->(r)"
-                result2 = tx.run(query, id_work_to_alter=id_work_to_alter, id_new_ref=id_new_ref, user_id=user_id, project_id=project_id)
-                print("deu bom")
+                    query = "MATCH (t:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) detach delete t"
+                    result1 = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id)
+                    print('deletado ', ref_id)
 
-            tx.commit()
+
+                    query = "MATCH (t:trabalho{id:$id_to_alter, user_id:$user_id, project_id:$project_id}), (r:trabalho{id:$ref_to_alter, user_id:$user_id, project_id:$project_id}) CREATE (t)-[:referencia]->(r)"
+                    result2 = tx.run(query, id_to_alter=id_to_alter, ref_to_alter=ref_to_alter, user_id=user_id, project_id=project_id)
+                    print(id_to_alter, "referencia", ref_to_alter)
+
+
+            '''# 2 - encontrar o trabalho da ref a ser alterada
+            query = "MATCH (a:trabalho{user_id:$user_id, project_id:$project_id})-[r:referencia]->(b:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) return a.id"
+            id_work_to_alter = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id)
+            id_work_to_alter = id_work_to_alter.single().value()
+            print(id_work_to_alter, "references", ref_id)
+
+            #3 deletar a ref antiga propriamente com seus relacionamentos
+            query = "MATCH (t:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) detach delete t"
+            result1 = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id)
+            print("deletado", ref_id)
+
+            #4 criar o novo relacionamento de referencia
+            query = "MATCH (t:trabalho{id:$id_work_to_alter, user_id:$user_id, project_id:$project_id}), (r:trabalho{id:$id_new_ref, user_id:$user_id, project_id:$project_id}) CREATE (t)-[:referencia]->(r)"
+            result2 = tx.run(query, id_work_to_alter=id_work_to_alter, id_new_ref=id_new_ref, user_id=user_id, project_id=project_id)
+            print("deu bom")'''
+
+            #tx.commit()
+            tx.rollback()
             return ("ok")
     except Exception as e:
         tx.rollback()
