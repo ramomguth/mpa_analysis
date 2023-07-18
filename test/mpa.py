@@ -15,7 +15,6 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
     
     print("marquei como main", main_ref)
     
-    #https://sol.sbc.org.br/index.php/wit/article/cite/6710/AcmCitationPlugin
     #implementar o check de que quando o usuario nao finalizou as similaridades nao pode fazer o MPA 
     """
     nova logica
@@ -134,8 +133,7 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
             result2 = tx.run(query, id_work_to_alter=id_work_to_alter, id_new_ref=id_new_ref, user_id=user_id, project_id=project_id)
             print("deu bom")'''
 
-            #tx.commit()
-            tx.rollback()
+            tx.commit()
             return ("ok")
     except Exception as e:
         tx.rollback()

@@ -226,11 +226,7 @@
           <div class="modal-content">
             <div class="modal-body">
               <p>Utilizar a seguinte referencia como principal para todas as selecionadas?</p>
-              <p id="primary-ref-text" class="text-break"> </p>
-              <!--<select class="form-select" aria-label="Default select example" id="modal-select-options">
-                <option selected>Open this select menu</option>
-                <option value="1">One</option>
-              </select>   -->           
+              <p id="primary-ref-text" class="w-100" style="line-break: anywhere;"> </p>         
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
@@ -251,7 +247,7 @@
 	var checkboxes = document.querySelectorAll(".checkbox");
 	// Get the element where the selected content will be displayed
 	var selectedContent = document.getElementById("modal-select-options");
-  let selectedContent2 = document.getElementById("primary-ref-text");
+    let selectedContent2 = document.getElementById("primary-ref-text");
 	// Listen for clicks on the submit button
 	var global_selected = [];
 	let tudo = [];
@@ -306,13 +302,17 @@
 				//console.log(ref_checkboxes);
 
 				selected.push([checkboxes[i].dataset.refdata, checkboxes[i].dataset.refname]);
-				modal_html_select = modal_html_select + `<option value="${checkboxes[i].dataset.refdata}">${checkboxes[i].dataset.refname}</option>`
-				//modal_html_select = modal_html_select + `<option value="${checkboxes[i].dataset.referenciab}">${checkboxes[i].dataset.referenciab}</option>`
+				modal_html_select = checkboxes[i].dataset.refname;
+                //modal_html_select = modal_html_select + `<option value="${checkboxes[i].dataset.refdata}">${checkboxes[i].dataset.refname}</option>`
+                //modal_html_select = modal_html_select + `<option value="${checkboxes[i].dataset.referenciab}">${checkboxes[i].dataset.referenciab}</option>`
 			}
 		}
 		// Display the selected content in the modal
 		//selectedContent.innerHTML = modal_html_select;
-    selectedContent2.innerHTML = modal_html_select;
+        //selectedContent2.innerHTML = modal_html_select;
+        console.log("modal_html_select",modal_html_select)
+        selectedContent2.innerHTML = modal_html_select;
+
 		global_selected = selected;
 		//console.log("ref principa= ",global_selected);
 	});

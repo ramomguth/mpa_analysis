@@ -59,10 +59,26 @@ def scrape_sbc_event(url):
 		content=req.text
 		soup=BeautifulSoup(content, "html.parser")
 
-		work_title=soup.find(attrs={'class':'page_title'})
-		work_title = re.sub('\s+',' ',work_title.text)
-		#print("i=",i,"  ",work_title)
+		'''
+		no corpo da página não tem o titulo em forma de citação, mas felizmente existe um campo chamado ApaCitationPlugin
+		com o link da citação do trabalho , onde ele retorna exclusivamente a citação do mesmo
+		'''
+		sbc_id = soup.find(attrs={'class':'ApaCitationPlugin'})
+		work_citation_url = sbc_id.a['href']
+		#print("i = ",i, "id= ",sbc_id)
+					
+		work_citation_req = requests.get(work_citation_url)
+		work_soup = BeautifulSoup(work_citation_req.text, 'html.parser')
 
+		# 'get_text' function will extract all the text without tags
+		work_citation = work_soup.get_text(separator=' ')
+
+		# Remove any additional white space
+		work_citation = ' '.join(work_citation.split())
+		#print("i = ",i, " ", work_citation)
+
+		work_title = work_citation
+		
 		todas_referencias = soup.find(attrs={'class':'item references'})
 		
 		if todas_referencias == None:		#se nao tem referencias, pula o trabalho
