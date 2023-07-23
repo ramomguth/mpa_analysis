@@ -350,16 +350,11 @@ def mpa(request):
         try:
             post_data = json.loads(request.body)
             tipo = post_data[0]
-            make_mpa(tipo, user_id, project_id)
+            cytoscape_json = make_mpa(tipo, user_id, project_id)
 
-            return HttpResponse("ok")
-            """ driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
-            with driver.session() as session: 
-                result = session.run("MATCH (t:Trabalho)-[s:Referencia]->(r:Reference) return t.id as citing, r.ref_id as cited limit 20")
-                #for r in result:
-                #    print(r.values())
-                citation_data = pd.DataFrame([r.data() for r in result])
-                G = nx.from_pandas_edgelist(citation_data, source='citing', target='cited', create_using=nx.DiGraph())"""
+            print(cytoscape_json)
+            return JsonResponse(cytoscape_json)
+        
         except Exception as e:
             traceback.print_exc()
             return HttpResponse(e)
@@ -369,8 +364,10 @@ def make_mpa(tipo, user_id, project_id):
     try:
         driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
         with driver.session() as session: 
-            query = "match (s:trabalho {user_id:$user_id, project_id:$project_id})-[:referencia]->(d:trabalho {user_id:$user_id, project_id:$project_id}) return id(s) as source_id, s.title as source_name, id(d) as target_id, d.title as target_name" 
-            result = session.run(query, user_id=user_id, project_id=project_id)
+            #query = "match (s:trabalho {user_id:$user_id, project_id:$project_id})-[:referencia]->(d:trabalho {user_id:$user_id, project_id:$project_id}) return id(s) as source_id, s.title as source_name, id(d) as target_id, d.title as target_name" 
+            #result = session.run(query, user_id=user_id, project_id=project_id)
+            query = "match (s:Trabalho)-[:Referencia]->(d:Trabalho) return id(s) as source_id, s.title as source_name, id(d) as target_id, d.title as target_name" 
+            result = session.run(query)
             data = [record for record in result]
             
             sources = [record['source_id'] for record in data]
@@ -383,8 +380,10 @@ def make_mpa(tipo, user_id, project_id):
                 MATCH (n)-[r:referencia]->()
                 DELETE n, r, m
             '''
-            query = "match (s:trabalho {user_id:$user_id, project_id:$project_id}) return id(s) as source_id, s.title as source_name"
-            result = session.run(query, user_id=user_id, project_id=project_id)
+            #query = "match (s:trabalho {user_id:$user_id, project_id:$project_id}) return id(s) as source_id, s.title as source_name"
+            #result = session.run(query, user_id=user_id, project_id=project_id)
+            query = "match (s:Trabalho) return id(s) as source_id, s.title as source_name"
+            result = session.run(query)
             data = [record for record in result]
             
             #isso nao sao sources, sao todos os nos
@@ -402,38 +401,75 @@ def make_mpa(tipo, user_id, project_id):
                 g.add_edge(id_to_index[source_id], id_to_index[target_id])
 
                     
-            for index, element in enumerate(all_nodes_ids):
+            for index, element in enumerate(all_nodes_names):
                 g.vs[index]["name"] = element
            
-            g.vs["label"] = g.vs["name"]    
+            g.vs["label"] = g.vs["name"]   
+
+            if tipo == 'splc':
+                splc(g)
+                print('splc')
+                #ig.plot(g, vertex_label=l.vs["label"], target="l.svg")
+                ig.plot(g, layout="kk", edge_label=g.es["SPLC"], target="g.svg")
+                longest_path = []
+                max_length = 0
+                longest_edge_path = []
+
+                visited = [False] * g.vcount()
+
+                for v in range(g.vcount()):
+                    path, edge_path, length = longest_path_dfs(g, v, visited, [], [], 0, longest_path, longest_edge_path, max_length)
+                    if length > max_length:
+                        longest_path = path
+                        longest_edge_path = edge_path
+                        max_length = length
+
+                main_path = g.subgraph_edges(longest_edge_path)
+                print("Longest path:", longest_path)
+                print("edge:", longest_edge_path)
+                #print("Longest path length:", max_length)
+                print (main_path)
+                ig.plot(main_path, layout="kk", edge_label=main_path.es["SPLC"], target="main_path.svg")
+            else:
+                spc(g)
+                ig.plot(g, layout="kk", edge_label=g.es["SPC"], target="g.svg")
             
-            splc(g)
-            #ig.plot(g, vertex_label=l.vs["label"], target="l.svg")
-            ig.plot(g, layout="kk", edge_label=g.es["SPLC"], target="g.svg")
-            
-            # Calculate the longest path considering 'SPLC' attribute
-            longest_path = []
-            max_length = 0
-            longest_edge_path = []
+                # Calculate the longest path considering 'SPLC' attribute
+                longest_path = []
+                max_length = 0
+                longest_edge_path = []
 
-            visited = [False] * g.vcount()
+                visited = [False] * g.vcount()
 
-            for v in range(g.vcount()):
-                path, edge_path, length = longest_path_dfs(g, v, visited, [], [], 0, longest_path, longest_edge_path, max_length)
-                if length > max_length:
-                    longest_path = path
-                    longest_edge_path = edge_path
-                    max_length = length
+                for v in range(g.vcount()):
+                    path, edge_path, length = longest_path_spc(g, v, visited, [], [], 0, longest_path, longest_edge_path, max_length)
+                    if length > max_length:
+                        longest_path = path
+                        longest_edge_path = edge_path
+                        max_length = length
 
-            main_path = g.subgraph_edges(longest_edge_path)
-            print("Longest path:", longest_path)
-            print("edge:", longest_edge_path)
-            #print("Longest path length:", max_length)
-            print (main_path)
-            ig.plot(main_path, layout="kk", edge_label=main_path.es["SPLC"], target="main_path.svg")
+                main_path = g.subgraph_edges(longest_edge_path)
+                print("Longest path:", longest_path)
+                print("edge:", longest_edge_path)
+                #print("Longest path length:", max_length)
+                print (main_path)
+                ig.plot(main_path, layout="kk", edge_label=main_path.es["SPC"], target="main_path.svg")
 
-            #ig.plot(g, layout="kk", target="g2.svg")
-            return HttpResponse("ok")
+            #nodes
+            nodes = [{"data": {"id": v.index, "iswork": True, "name":v["name"], "label": v["name"]}} for v in g.vs]
+            # Create edges list
+            edges = [{"data": {"source": edge.source, "target": edge.target}} for edge in g.es]
+
+            # Create a dictionary in the desired format
+            cytoscape_json = {
+                "elements": {
+                    "nodes": nodes,
+                    "edges": edges
+                }
+            }
+            cytoscape_json_str = json.dumps(cytoscape_json)
+
+            return cytoscape_json
 
     
     except Exception as e:
