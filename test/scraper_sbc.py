@@ -35,8 +35,8 @@ def scrape_sbc_event(url):
 	soup=BeautifulSoup(content, "html.parser")
 	try:
 		for elem in soup.findAll(attrs={'class':'title'}):	#pega a url do trabalho
-			ll=elem.find('a')
-			urls.append(ll['href'])		
+			link=elem.find('a')
+			urls.append(link['href'])		
 	except: pass
 	#return urls
 
@@ -77,6 +77,8 @@ def scrape_sbc_event(url):
 		
 		if todas_referencias == None:		#se nao tem referencias, pula o trabalho
 			#w = work(work_title, [])
+			w = work(work_title, [])
+			trabalhos.append(w)
 			continue
 		
 		value_div = todas_referencias.find('div', class_='value')
@@ -94,7 +96,6 @@ def scrape_sbc_event(url):
 			refe[i] = r
 			if refe[i] == '': refe.pop(i)
 
-		
 		for br_tag in br_tags:
 			k= (br_tag.get_text())
 			i += 1

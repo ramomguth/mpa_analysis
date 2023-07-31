@@ -25,9 +25,7 @@
             width: 100%;
             height: 100%;
             position: absolute;
-            display: block;
-            
-            
+            display: block;  
         }
       .bd-placeholder-img {
         font-size: 1.125rem;
@@ -78,6 +76,16 @@
         text-align: center;
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
+      }
+
+      .hover-label {
+        position: absolute;
+        pointer-events: none;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: #fff;
+        padding: 5px;
+        border-radius: 3px;
+        font-size: 12px;
       }
     </style>
 
@@ -193,168 +201,164 @@
 </div>
 <div id="cy"></div>
 <script>
-  $("#draw").click(function(){
-    this.disabled = true;
+    $("#draw").click(function(){
+        this.disabled = true;
+        getGraphData();
 
-async function getGraphData() {
-    let mpa_data = [];
-    mpa_data.push("splc");
-    const csrfToken = document.getElementsByName("csrfmiddlewaretoken")[0].value;
-    const response = await axios({
-			method: "post",
-			url: "/mpa/",
-			data: mpa_data,
-			headers: { 
-				'Content-Type': 'application/json',
-				'X-CSRFToken': csrfToken
-		   }
-		});
-    graph_json_data = response.data;
-    let nodes = graph_json_data.elements.nodes;
-    let edges = graph_json_data.elements.edges;
-    let elem = {
-        nodes: nodes,
-        edges: edges
-    };
-    console.log(elem);
-    m_cont = document.getElementById('cy');
-    var cy = cytoscape({
-      container: document.getElementById('cy'),
-      elements: elem,
-      style:[
-      {
-        "selector": "core",
-        "style": {
-          "selection-box-color": "#AAD8FF",
-          "selection-box-border-color": "#8BB0D0",
-          "selection-box-opacity": "0.5"
-        }
-      }, {
-        "selector": "node",
-        "style": {
-          "width": "mapData(score, 0, 0.006769776522008331, 20, 60)",
-          "height": "mapData(score, 0, 0.006769776522008331, 20, 60)",
-          "content": "data(name)",
-          "font-size": "12px",
-          "text-valign": "center",
-          "text-halign": "center",
-          "background-color": "#555",
-         
-          "color": "black",
-          
-          "z-index": "10"
-        }
-      }, {
-          selector: 'node[?iswork]',
-          style: {
-              shape: 'circle',
-              'background-color': 'blue',
-              
-              "text-valign": "bottom",
-              "text-halign": "center",
-              label: 'data(name)'
-          }
-      },
-      {
-        selector: 'node[isref]',
-        style: {
-            shape: 'roundrectangle',
-            'background-color': 'red',
-            "z-index": "1",
-            label: 'data(id)'
+    async function getGraphData() {
+        let mpa_data = [];
+        mpa_data.push("splc");
+        const csrfToken = document.getElementsByName("csrfmiddlewaretoken")[0].value;
+        const response = await axios({
+            method: "post",
+            url: "/mpa/",
+            data: mpa_data,
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            }
+        });
+        graph_json_data = response.data;
+        let nodes = graph_json_data.elements.nodes;
+        let edges = graph_json_data.elements.edges;
+        let elem = {
+            nodes: nodes,
+            edges: edges
+        };
+        var cy = cytoscape({
+            container: document.getElementById('cy'),
+            elements: elem,
+            style:[
+            {
+                "selector": "core",
+                "style": {
+                    "selection-box-color": "#AAD8FF",
+                    "selection-box-border-color": "#8BB0D0",
+                    "selection-box-opacity": "0.5"
+                }
+            }, {
+                "selector": "node",
+                "style": {
+                    "content": "data(name)",
+                    "font-size": "12px",
+                    "text-valign": "center",
+                    "text-halign": "center",
+                    "background-color": "#555",
+                    "color": "black",
+                    "z-index": "10"
+                }
+            }, {
+                selector: 'node[?iswork]',
+                style: {
+                    shape: 'circle',
+                    'background-color': 'blue',
+                    "text-valign": "bottom",
+                    "text-halign": "center",
+                    label: 'data(name)'
+                }
+            },
+            {
+                selector: 'node[?show]',
+                style: {
+                    shape: 'roundrectangle',
+                    'background-color': 'red',
+                    "z-index": "1",
+                    label: 'data(id)',
+                    display: 'none'
+                }
+            },
+            {
+                "selector": "node:selected",
+                "style": {
+                    "border-width": "6px",
+                    "border-color": "#AAD8FF",
+                    "border-opacity": "0.5",
+                    "background-color": "#77828C",
+                    "text-outline-color": "#77828C"
+                }
+            },
+            {
+                "selector": "edge",
+                "style": {
+                    "curve-style": "bezier",
+                    "haystack-radius": "0.5",
+                    "opacity": "0.4",
+                    "line-color": "#bbb",
+                    "width": "4",
+                    "overlay-padding": "3px",
+                    "target-arrow-shape": "triangle"
+                }
+            }, {
+                "selector": "node.unhighlighted",
+                "style": {
+                    "opacity": "0.2"
+                }
+            }, {
+                "selector": "edge.unhighlighted",
+                "style": {
+                    "opacity": "0.05"
+                }
+            }, {
+                "selector": ".highlighted",
+                "style": {
+                    "z-index": "999999"
+                }
+            }, {
+                "selector": "node.highlighted",
+                "style": {
+                    "border-width": "6px",
+                    "border-color": "#AAD8FF",
+                    "border-opacity": "0.5",
+                    "background-color": "#394855",
+                    "text-outline-color": "#394855"
+                }
+            }, 
+            ],
+            layout: {
+                name: 'cose',
+                idealEdgeLength: 100,
+                nodeOverlap: 20,
+                refresh: 20,
+                fit: false,
+                padding: 30,
+                randomize: false,
+                componentSpacing: 100,
+                nodeRepulsion: 400000,
+                edgeElasticity: 100,
+                nestingFactor: 5,
+                gravity: 80,
+                numIter: 1000,
+                initialTemp: 200,
+                coolingFactor: 0.95,
+                minTemp: 1.0
+            } 
+        });
+        
+        var hoverLabel = document.createElement('div');
+        hoverLabel.classList.add('hover-label');
+        document.body.appendChild(hoverLabel);
 
-        }
-    },
-    {
-      "selector": "node:selected",
-      "style": {
-        "border-width": "6px",
-        "border-color": "#AAD8FF",
-        "border-opacity": "0.5",
-        "background-color": "#77828C",
-        "text-outline-color": "#77828C"
-      }
-    },
-  {
-    "selector": "edge",
-    "style": {
-      "curve-style": "bezier",
-      "haystack-radius": "0.5",
-      "opacity": "0.4",
-      "line-color": "#bbb",
-      "width": "4",
-      "overlay-padding": "3px",
-      "target-arrow-shape": "triangle"
+        // Show the hover label on node hover
+        cy.on('mouseover', 'node', function(event) {
+            var node = event.target;
+            var nodeLabel = node.data('label');
+            var pos = node.renderedPosition();
+            hoverLabel.innerHTML = nodeLabel;
+            hoverLabel.style.left = pos.x + 'px';
+            hoverLabel.style.top = pos.y + 'px';
+            hoverLabel.style.display = 'block';
+        });
+
+        // Hide the hover label when the mouse leaves the node
+        cy.on('mouseout', 'node', function(event) {
+            hoverLabel.style.display = 'none';
+        });
     }
-  }, {
-    "selector": "node.unhighlighted",
-    "style": {
-      "opacity": "0.2"
-    }
-  }, {
-    "selector": "edge.unhighlighted",
-    "style": {
-      "opacity": "0.05"
-    }
-  }, {
-    "selector": ".highlighted",
-    "style": {
-      "z-index": "999999"
-    }
-  }, {
-    "selector": "node.highlighted",
-    "style": {
-      "border-width": "6px",
-      "border-color": "#AAD8FF",
-      "border-opacity": "0.5",
-      "background-color": "#394855",
-      "text-outline-color": "#394855"
-    }
-  }, 
+
   
-    ],
-    layout: {
-      name: 'cose',
-      idealEdgeLength: 100,
-      nodeOverlap: 20,
-      refresh: 20,
-      fit: false,
-      padding: 30,
-      randomize: false,
-      componentSpacing: 100,
-      nodeRepulsion: 400000,
-      edgeElasticity: 100,
-      nestingFactor: 5,
-      gravity: 80,
-      numIter: 1000,
-      initialTemp: 200,
-      coolingFactor: 0.95,
-      minTemp: 1.0
-    } 
-    });
-    //console.log(Object.entries(m_data));
-  }
-getGraphData();
+    //getGraphData();
 });
 
-  /*let data = null;
-  async function getGraphData() {
-      try {
-        const response = await axios.get('/get_graph_data');
-        data = response.data;
-        var cy = cytoscape({
-          container: document.getElementById('cy')
-      });
-      cy.add(data); 
-      cy.layout({
-          name: 'circle'
-      }).run();
-      } catch (error) {
-        console.error(error);
-      }
-    }
-    getGraphData();
-});*/
 </script>
 
       <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>

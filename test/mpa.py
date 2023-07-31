@@ -75,6 +75,7 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
 
             '''no caso 1, todas as referencias devem apontar para a principal (que eh do tipo primaria)'''
             if (caso == 1):
+                print("caso 1")
                 for ref_id in params:
                     query = "MATCH (a:trabalho{user_id:$user_id, project_id:$project_id})-[r:referencia]->(b:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) return a.id as id_to_alter"
                     result = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id).single()
@@ -92,6 +93,7 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
             
             #no caso 2 todas referencias tambem devem apontar para a referencia primaria, mesmo que o usuario tenha marcado uma secundaria como principal
             if (caso == 2):
+                print("caso 2")
                 params.remove(ref_to_alter)
                 params.append(main_ref)
                 
@@ -173,7 +175,21 @@ def longest_path_spc(graph, vertex, visited, path, edge_path, path_length, max_p
 def spc(g):
         sinks = [v.index for v in g.vs if g.outdegree(v.index) == 0]
         primary_sources = [v.index for v in g.vs if g.indegree(v.index) == 0]
+        
+        all_paths = []
+        for ps in primary_sources:
+            for s in sinks:
+                paths = g.get_all_simple_paths(ps, s, mode="out")
+                all_paths.extend(paths)
+        
         edge_list = g.get_edgelist()
+        
+        for index, edge in enumerate(edge_list):
+            # Filter paths that include the specific edge
+            paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
+            print("caminhos com o escolhido = ",len(paths_with_edge))
+            g.es[index]["SPC"] = len(paths_with_edge)
+        '''edge_list = g.get_edgelist()
         # find all simple paths between start and end vertices
         for index,edge in enumerate(edge_list):
             all_paths = []
@@ -189,15 +205,14 @@ def spc(g):
             # filter paths that include the specific edge
             paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
             #print("caminhos com o escolhido = ",len(paths_with_edge))
-            
-            g.es[index]["SPC"] = len(paths_with_edge)
+            g.es[index]["SPC"] = len(paths_with_edge)'''
 
 def splc(g):
     sinks = [v.index for v in g.vs if g.outdegree(v.index) == 0]
     primary_sources = [v.index for v in g.vs if g.indegree(v.index) == 0]
     edge_list = g.get_edgelist()
-
-        # find all simple paths between start and end vertices
+    
+    # find all simple paths between start and end vertices
     for index,edge in enumerate(edge_list):
         all_paths = []
         current_node = edge_list[index][1]  #tem o no de destino, tipo c->e, e eh o destino
@@ -212,12 +227,12 @@ def splc(g):
         for elem in unique_pred:
             for s in sinks:
                 paths = g.get_all_simple_paths(elem, s, mode="out")
-                all_paths.extend(paths)
+                all_paths.extend(paths)        
             #all_paths = g.get_all_simple_paths(g.vs.find(0), g.vs.find(name=end_vertex).index, mode="out")                
-            #print("todos caminhos", all_paths)  
+            #print("todos caminhos", all_paths)  ps-72 sink-373
         
         paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
-        print("caminhos com o escolhido = ",len(paths_with_edge))            
+        #print("caminhos com o escolhido = ",len(paths_with_edge))            
         g.es[index]["SPLC"] = len(paths_with_edge)
 
 

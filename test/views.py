@@ -309,6 +309,10 @@ def finish_similarities(request):
               
                 query = "MATCH (a:trabalho {user_id:$user_id, project_id:$project_id})-[s:similar_to]->(b:trabalho {user_id:$user_id, project_id:$project_id}) delete s"
                 result = tx.run (query, user_id=user_id, project_id=project_id)
+
+                #query = "MATCH (t:trabalho {user_id:$user_id, project_id:$project_id})<-[:referencia]-(r) WITH t, count(r) as incomingRefs WHERE incomingRefs = 1 set t.show = 'false'"
+                #result = tx.run (query, user_id=user_id, project_id=project_id)
+
                 resp = {
                     'status': 'ok'
                 }
@@ -352,7 +356,6 @@ def mpa(request):
             tipo = post_data[0]
             cytoscape_json = make_mpa(tipo, user_id, project_id)
 
-            print(cytoscape_json)
             return JsonResponse(cytoscape_json)
         
         except Exception as e:
@@ -364,31 +367,27 @@ def make_mpa(tipo, user_id, project_id):
     try:
         driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
         with driver.session() as session: 
-            #query = "match (s:trabalho {user_id:$user_id, project_id:$project_id})-[:referencia]->(d:trabalho {user_id:$user_id, project_id:$project_id}) return id(s) as source_id, s.title as source_name, id(d) as target_id, d.title as target_name" 
-            #result = session.run(query, user_id=user_id, project_id=project_id)
-            query = "match (s:Trabalho)-[:Referencia]->(d:Trabalho) return id(s) as source_id, s.title as source_name, id(d) as target_id, d.title as target_name" 
-            result = session.run(query)
+            query = "match (s:trabalho {user_id:$user_id, project_id:$project_id})-[:referencia]->(d:trabalho {user_id:$user_id, project_id:$project_id}) return s.id as source_id, s.title as source_name, d.id as target_id, d.title as target_name" 
+            result = session.run(query, user_id=user_id, project_id=project_id)
+            #query = "match (s:Trabalho)-[:Referencia]->(d:Trabalho) return id(s) as source_id, s.title as source_name, id(d) as target_id, d.title as target_name" 
+            #result = session.run(query)
             data = [record for record in result]
             
             sources = [record['source_id'] for record in data]
             targets = [record['target_id'] for record in data]
             comb = list(zip(sources, targets))
           
-            '''MATCH (n:trabalho)-[:referencia]->(m:trabalho)
-                WHERE NOT (m)-[:referencia]->(:trabalho)
-                WITH n, m
-                MATCH (n)-[r:referencia]->()
-                DELETE n, r, m
-            '''
-            #query = "match (s:trabalho {user_id:$user_id, project_id:$project_id}) return id(s) as source_id, s.title as source_name"
-            #result = session.run(query, user_id=user_id, project_id=project_id)
-            query = "match (s:Trabalho) return id(s) as source_id, s.title as source_name"
-            result = session.run(query)
-            data = [record for record in result]
             
+            query = "match (s:trabalho {user_id:$user_id, project_id:$project_id}) return s.id as source_id, s.title as source_name, s.tipo as tipo"
+            result = session.run(query, user_id=user_id, project_id=project_id)
+            #query = "match (s:Trabalho) return id(s) as source_id, s.title as source_name"
+            #result = session.run(query)
+            data = [record for record in result]
             #isso nao sao sources, sao todos os nos
             all_nodes_ids = [record['source_id'] for record in data]
             all_nodes_names = [record['source_name'] for record in data]
+            all_nodes_tipo = [record['tipo'] for record in data]
+
             
             g = ig.Graph(directed=True)
             id_to_index = {}
@@ -403,14 +402,16 @@ def make_mpa(tipo, user_id, project_id):
                     
             for index, element in enumerate(all_nodes_names):
                 g.vs[index]["name"] = element
+
+            for index, element in enumerate(all_nodes_tipo):
+                g.vs[index]["tipo"] = element
            
             g.vs["label"] = g.vs["name"]   
 
             if tipo == 'splc':
                 splc(g)
-                print('splc')
                 #ig.plot(g, vertex_label=l.vs["label"], target="l.svg")
-                ig.plot(g, layout="kk", edge_label=g.es["SPLC"], target="g.svg")
+                ig.plot(g, layout="kk", edge_label=g.es["SPLC"], target="g.svg",bbox=(5000, 5000))
                 longest_path = []
                 max_length = 0
                 longest_edge_path = []
@@ -428,13 +429,23 @@ def make_mpa(tipo, user_id, project_id):
                 print("Longest path:", longest_path)
                 print("edge:", longest_edge_path)
                 #print("Longest path length:", max_length)
-                print (main_path)
-                ig.plot(main_path, layout="kk", edge_label=main_path.es["SPLC"], target="main_path.svg")
+                #print (main_path)
+                ig.plot(main_path, layout="kk", edge_label=main_path.es["SPLC"], target="main_path.svg",bbox=(1920, 1080))
+
+                #nodes
+                nodes = [{"data": {"id": v.index, "tipo": v["tipo"], "name":v["name"], "label": v["name"]}} for v in g.vs]
+                # Create edges list
+                edges = [{"data": {"source": edge.source, "target": edge.target, "splc":edge["SPLC"]}} for edge in g.es if edge["SPLC"] > 1]
+
+                #mpa nodes
+                mpa_nodes = [{"data": {"id": v.index, "tipo": v["tipo"], "name":v["name"], "label": v["name"]}} for v in main_path.vs]
+                # Create edges list
+                mpa_edges = [{"data": {"source": edge.source, "target": edge.target}} for edge in main_path.es]
             else:
                 spc(g)
                 ig.plot(g, layout="kk", edge_label=g.es["SPC"], target="g.svg")
             
-                # Calculate the longest path considering 'SPLC' attribute
+                # Calculate the longest path considering 'SPC' attribute
                 longest_path = []
                 max_length = 0
                 longest_edge_path = []
@@ -452,23 +463,32 @@ def make_mpa(tipo, user_id, project_id):
                 print("Longest path:", longest_path)
                 print("edge:", longest_edge_path)
                 #print("Longest path length:", max_length)
-                print (main_path)
-                ig.plot(main_path, layout="kk", edge_label=main_path.es["SPC"], target="main_path.svg")
+                #print (main_path)
+                ig.plot(main_path, layout="kk", edge_label=main_path.es["SPC"], target="main_path.svg",bbox=(3000, 3000))
 
-            #nodes
-            nodes = [{"data": {"id": v.index, "iswork": True, "name":v["name"], "label": v["name"]}} for v in g.vs]
-            # Create edges list
-            edges = [{"data": {"source": edge.source, "target": edge.target}} for edge in g.es]
+                #complete graph nodes
+                nodes = [{"data": {"id": v.index, "tipo": v["tipo"], "name":v["name"], "label": v["name"]}} for v in g.vs]
+                # Create edges list
+                edges = [{"data": {"source": edge.source, "target": edge.target, "spc":edge["SPC"]}} for edge in g.es if edge["SPC"] > 1]
+
+                #mpa nodes
+                mpa_nodes = [{"data": {"id": v.index, "tipo": v["tipo"], "name":v["name"], "label": v["name"]}} for v in main_path.vs]
+                # Create edges list
+                mpa_edges = [{"data": {"source": edge.source, "target": edge.target}} for edge in main_path.es]
 
             # Create a dictionary in the desired format
             cytoscape_json = {
                 "elements": {
                     "nodes": nodes,
                     "edges": edges
+                },
+                "mpa_elements": {
+                    "mpa_nodes": mpa_nodes,
+                    "mpa_edges": mpa_edges
                 }
             }
-            cytoscape_json_str = json.dumps(cytoscape_json)
 
+            #print(cytoscape_json["mpa_elements"])
             return cytoscape_json
 
     

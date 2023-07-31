@@ -365,8 +365,10 @@
         })
         .then(response => {
             if (response.data.status === "ok") 
-                console.log(response.data);
-                finish_button.innerHTML = "Processo concluído com sucesso!"
+                finish_button.innerHTML = "Processo concluído com sucesso!";
+                setTimeout(function() {
+                  location.reload();
+                }, 4000); 
         })
         .catch(error => {
             console.error(error);
