@@ -6,6 +6,7 @@ from django.http import HttpResponse
 from django.http import JsonResponse
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
+from datetime import datetime, timedelta
 from neo4j import GraphDatabase
 from dataclasses import dataclass
 import igraph as ig
@@ -104,7 +105,7 @@ def register(request):
             
             if (copy_res == 0):      #nao existe esse email na base
                 id = uuid.uuid4()
-                q = f"""CREATE (u:User{{name:"{username}", passwd:"{password}", email:"{email}", num_projects:"0", user_id:"{id}"}}) return u"""
+                q = f"""CREATE (u:User{{name:"{username}", passwd:"{password}", email:"{email}", user_id:"{id}"}}) return u"""
                 res = session.run(q).single()[0]
                 copy_res = res
                 if (copy_res):
@@ -155,7 +156,7 @@ def create_project(request):
             driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
             with driver.session() as session:
                 id = uuid.uuid4()
-                q = f"""CREATE (p:Project{{name:"{nome}", descricao:"{descricao}", user_id:"{user_id}", project_id:"{id}", num_works:"0"}}) return p"""
+                q = f"""CREATE (p:Project{{name:"{nome}", descricao:"{descricao}", user_id:"{user_id}", project_id:"{id}"}}) return p"""
                 result = session.run(q).single()
                 response = redirect('index')
                 return response
@@ -179,6 +180,37 @@ def set_project(request):
                     return response
             except Exception as e:
                 return HttpResponse(e)
+    else:
+        return redirect('login_user')
+    
+def delete_project(request):
+    if (request.user.is_authenticated and request.method == 'DELETE'):
+        user_id = request.session['user_id']
+        project_id = request.COOKIES.get('project_id')
+
+        if (not project_id):
+            response = HttpResponse("empty")
+            return response
+        else:
+            driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+            with driver.session() as session:
+                tx = session.begin_transaction()
+                try:
+                    query = "MATCH (f:simil_flag {user_id:$user_id, project_id:$project_id}) delete f"
+                    result = tx.run (query, user_id=user_id, project_id=project_id)
+                    query = "MATCH (p:Project {user_id:$user_id, project_id:$project_id}) delete p"
+                    result = tx.run (query, user_id=user_id, project_id=project_id)
+                    query = "MATCH (t:trabalho {user_id:$user_id, project_id:$project_id}) detach delete t"
+                    result = tx.run (query, user_id=user_id, project_id=project_id)
+                    tx.commit()
+
+                    expires = datetime.now() - timedelta(days=365)  # Set the expired date in the past
+                    response = HttpResponse("ok")
+                    response.set_cookie('project_id', '', expires=expires)
+                    return response
+                except Exception as e:
+                    tx.rollback()
+                    return HttpResponse(e)
     else:
         return redirect('login_user')
   
@@ -264,11 +296,12 @@ def save_similarities(request):
     if request.method == 'POST':
         try:
             #table_data = json.loads(request.POST.get('my_data'))
-            post_data = list(json.loads(request.body))
             #table_data = list(table_data.values())
-            
+            post_data = list(json.loads(request.body))
             if not post_data[0]:
-                return HttpResponse("Nenhuma mudança encontrada")
+                return HttpResponse("none")
+            if not post_data[1]:
+                return HttpResponse("none")
             
             main_ref = post_data.pop(0)
             main_ref = main_ref[0][0] #por alguma razao vem como lista de lista
@@ -389,6 +422,7 @@ def make_mpa(tipo, user_id, project_id):
             all_nodes_tipo = [record['tipo'] for record in data]
 
             
+            #usa como id numeros crescente inves de usar o uuid
             g = ig.Graph(directed=True)
             id_to_index = {}
             for index, node_id in enumerate(all_nodes_ids):
@@ -398,8 +432,7 @@ def make_mpa(tipo, user_id, project_id):
             # Add edges to the graph using the mapping.
             for source_id, target_id in comb:
                 g.add_edge(id_to_index[source_id], id_to_index[target_id])
-
-                    
+        
             for index, element in enumerate(all_nodes_names):
                 g.vs[index]["name"] = element
 
@@ -490,8 +523,6 @@ def make_mpa(tipo, user_id, project_id):
 
             #print(cytoscape_json["mpa_elements"])
             return cytoscape_json
-
-    
     except Exception as e:
         traceback.print_exc()
         return (e)

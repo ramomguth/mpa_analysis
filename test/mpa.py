@@ -189,7 +189,9 @@ def spc(g):
             paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
             print("caminhos com o escolhido = ",len(paths_with_edge))
             g.es[index]["SPC"] = len(paths_with_edge)
-        '''edge_list = g.get_edgelist()
+        
+        ''' OLD VERSION
+        edge_list = g.get_edgelist()
         # find all simple paths between start and end vertices
         for index,edge in enumerate(edge_list):
             all_paths = []

@@ -222,7 +222,7 @@
       </style>
     
       <div class="modal" id="meu-modal" tabindex="-1">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-body">
               <p>Utilizar a seguinte referencia como principal para todas as selecionadas?</p>
@@ -340,9 +340,12 @@
 		   }
 		})
 		.then(response => {
-			console.log(response);
-		if (response.status === 200) 
-			location.reload();
+            if (response.data === "none") {
+                alert("Nenhuma mudança encontrada!");
+                location.reload();
+            }
+		    if (response.status === 200) 
+		        location.reload();
 		})
 		.catch(error => {
 			console.error(error);

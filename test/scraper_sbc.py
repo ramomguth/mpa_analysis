@@ -213,7 +213,7 @@ def compare_refs(user_id, project_id):
 			tup = (similarity, strings_dict[str1], strings_dict[str2])
 			simil.append(tup)
 	et = time.time()
-	print ("time = ", et - st)
+	#print ("time = ", et - st)
 
 	try:
 		#salva as similaridades

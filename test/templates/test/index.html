@@ -197,10 +197,9 @@
       </div>
 
         <button type="button" class="btn btn-primary" id="select-project">Selecionar projeto</button>
-        <a href="http://127.0.0.1:8000/create_project/">
-          <button type="button" class="btn btn-primary" id="create-project">Criar projeto</button>
-        </a>
+        <button type="button" class="btn btn-primary" id="create-project" onclick="window.location.href='http://127.0.0.1:8000/create_project/'">Criar projeto</button>
         <button type="button" class="btn btn-primary" id="delete-project">Deletar projeto</button>
+        
 
 
         <p> </p>
@@ -265,6 +264,29 @@
             
         });
         </script>
+
+        <script>
+            var delete_btn = document.getElementById("delete-project");  
+            const csrfToken = document.getElementsByName("csrfmiddlewaretoken")[0].value; 
+            delete_btn.addEventListener("click", function() {
+                axios({
+                    method: "delete",
+                    url: "{% url 'delete_project' %}",
+                    headers: { 'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                   }
+                })
+                .then(response => {
+                    if (response.status === 200) 
+                        location.reload();
+                    if (response.data === "empty") alert("Nenhum projeto selecionado!");
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        </script>
+
       
   
       </div>
