@@ -160,7 +160,7 @@
                 <p class="text-center text-muted mt-5 mb-0"> Não está registrado? <a href="http://127.0.0.1:8000/register/"
                     class="fw-bold text-body"><u>Registrar aqui</u></a></p>
 
-                  <p class="text-center text-muted mt-5 mb-0" id="login-response"> </p> 
+                  <p class="text-center mt-5 mb-0" id="login-response"> </p> 
 
 
                 </form>
@@ -209,7 +209,7 @@
                 document.getElementById("login-response").innerText = response.data.message;
                 setTimeout(function() {
                   location.reload();
-                }, 4000); // 5000 milliseconds = 5 seconds
+                }, 4000); // 4000 milliseconds = 4 seconds
               }
   
   

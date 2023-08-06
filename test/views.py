@@ -11,6 +11,7 @@ from neo4j import GraphDatabase
 from dataclasses import dataclass
 import igraph as ig
 from igraph import Graph
+import bcrypt
 import numpy as np
 import pandas as pd
 import json, uuid
@@ -57,26 +58,27 @@ def login_user(request):
     try:
         driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
         with driver.session() as session: 
-            q = f"""MATCH (u:User{{email:"{email}",passwd:"{password}"}}) return u.name, u.user_id, u.passwd, u.email"""
+            q = f"""MATCH (u:User{{email:"{email}"}}) return u.name, u.user_id, u.passwd, u.email"""
             result = session.run(q)
             neo4j_response=[]           #eh necessario salvar a resposta numa lista, senao e consumida e fica nula
             for record in result:       #o proprio if(result.value()) consome a resposta
                 neo4j_response = record.values() 
 
-            if (neo4j_response):
+            if neo4j_response and bcrypt.checkpw(password.encode('utf-8'), neo4j_response[2].encode('utf-8')):
                 id = str(neo4j_response[1])
-                user = authenticate(request, username=neo4j_response[0], password=neo4j_response[2])
-                login(request, user)
-                request.session['user_id'] = id
-                #response = redirect('index')
-                #response.set_cookie('user_id', id)
-                response_data = {
-                        'auth_status': 'success',
-                        'redirect_url': reverse('index')  
-                }
-                response = JsonResponse(response_data)
-                response.set_cookie('user_id', id)
-                return response
+                user = authenticate(request, username=neo4j_response[0], password=password)
+                if user:
+                    login(request, user)
+                    request.session['user_id'] = id
+                    #response = redirect('index')
+                    #response.set_cookie('user_id', id)
+                    response_data = {
+                            'auth_status': 'success',
+                            'redirect_url': reverse('index')  
+                    }
+                    response = JsonResponse(response_data)
+                    response.set_cookie('user_id', id)
+                    return response
             else:
                 response_data = {
                     'auth_status': 'failure',
@@ -84,6 +86,7 @@ def login_user(request):
                 }
                 return JsonResponse(response_data)
     except Exception as e:
+        traceback.print_exc()
         return (e)
  
 def register(request):
@@ -96,6 +99,9 @@ def register(request):
     password_2 = request.POST['repeatpasswd']
     if (password != password_2):
         return HttpResponse("Senhas nao sao iguais") 
+    
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
     try:
         driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
         with driver.session() as session: 
@@ -105,10 +111,12 @@ def register(request):
             
             if (copy_res == 0):      #nao existe esse email na base
                 id = uuid.uuid4()
-                q = f"""CREATE (u:User{{name:"{username}", passwd:"{password}", email:"{email}", user_id:"{id}"}}) return u"""
+                
+                q = f"""CREATE (u:User{{name:"{username}", passwd:"{hashed_password}", email:"{email}", user_id:"{id}"}}) return u"""
                 res = session.run(q).single()[0]
                 copy_res = res
                 if (copy_res):
+                    #Django ja tem um sistema de criptografia de senhas interno, logo nao precisa usar outro
                     user0 = User.objects.create_user(username, email, password)
                     user = authenticate(request, username=username, password=password)
                     login(request, user)
