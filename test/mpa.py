@@ -22,7 +22,7 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
     2 - primaria com ref: um principal vai endereçar outro indiretamente
     principal -> ref -> outro principal
     3 - marcar ref com principal não pode, ignora o usuario e marca a primaria como principal
-    4 - primaria com primaria: Não pode, deleta a similaridade e da continue foi tratado no compare_refs
+    4 - primaria com primaria: Não pode, deleta a similaridade e da continue - tratado no compare_refs
     
     """
     try:
@@ -36,7 +36,7 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
             '''
             caso = 0 -> tudo que foi marcado pelo usuario e referencia secundaria
             caso = 1 -> o usuario marcou uma referencia primaria como principal
-            caso = 2 -> o usuario marcou uma referencia secundaria como principal e quer alterar para primaria NAO PODE
+            caso = 2 -> o usuario marcou uma referencia secundaria como principal e quer alterar para primaria - NAO PODE
             '''
             caso = 0
             ref_to_alter = 0
@@ -120,6 +120,138 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
         traceback.print_exc()
         return(e)
 
+
+
+def make_mpa(tipo, user_id, project_id):
+    try:
+        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        with driver.session() as session: 
+            query = "match (s:trabalho {user_id:$user_id, project_id:$project_id})-[:referencia]->(d:trabalho {user_id:$user_id, project_id:$project_id}) return s.id as source_id, s.title as source_name, d.id as target_id, d.title as target_name" 
+            result = session.run(query, user_id=user_id, project_id=project_id)
+            #query = "match (s:Trabalho)-[:Referencia]->(d:Trabalho) return id(s) as source_id, s.title as source_name, id(d) as target_id, d.title as target_name" 
+            #result = session.run(query)
+            data = [record for record in result]
+            
+            sources = [record['source_id'] for record in data]
+            targets = [record['target_id'] for record in data]
+            comb = list(zip(sources, targets))
+          
+            
+            query = "match (s:trabalho {user_id:$user_id, project_id:$project_id}) return s.id as source_id, s.title as source_name, s.tipo as tipo"
+            result = session.run(query, user_id=user_id, project_id=project_id)
+            #query = "match (s:Trabalho) return id(s) as source_id, s.title as source_name"
+            #result = session.run(query)
+            data = [record for record in result]
+            #isso nao sao sources, sao todos os nos
+            all_nodes_ids = [record['source_id'] for record in data]
+            all_nodes_names = [record['source_name'] for record in data]
+            all_nodes_tipo = [record['tipo'] for record in data]
+
+            
+            #usa como id numeros crescente inves de usar o uuid
+            g = ig.Graph(directed=True)
+            id_to_index = {}
+            for index, node_id in enumerate(all_nodes_ids):
+                g.add_vertex(name=all_nodes_names[index])
+                id_to_index[node_id] = index
+
+            # Add edges to the graph using the mapping.
+            for source_id, target_id in comb:
+                g.add_edge(id_to_index[source_id], id_to_index[target_id])
+        
+            for index, element in enumerate(all_nodes_names):
+                g.vs[index]["name"] = element
+
+            for index, element in enumerate(all_nodes_tipo):
+                g.vs[index]["tipo"] = element
+           
+            g.vs["label"] = g.vs["name"]   
+
+            if tipo == 'splc':
+                splc(g)
+                #ig.plot(g, vertex_label=l.vs["label"], target="l.svg")
+                ig.plot(g, layout="kk", edge_label=g.es["SPLC"], target="g.svg",bbox=(5000, 5000))
+                longest_path = []
+                max_length = 0
+                longest_edge_path = []
+
+                visited = [False] * g.vcount()
+
+                for v in range(g.vcount()):
+                    path, edge_path, length = longest_path_dfs(g, v, visited, [], [], 0, longest_path, longest_edge_path, max_length)
+                    if length > max_length:
+                        longest_path = path
+                        longest_edge_path = edge_path
+                        max_length = length
+
+                main_path = g.subgraph_edges(longest_edge_path)
+                print("Longest path:", longest_path)
+                print("edge:", longest_edge_path)
+                #print("Longest path length:", max_length)
+                #print (main_path)
+                ig.plot(main_path, layout="kk", edge_label=main_path.es["SPLC"], target="main_path.svg",bbox=(1920, 1080))
+
+                #nodes
+                nodes = [{"data": {"id": v.index, "tipo": v["tipo"], "name":v["name"], "label": v["name"]}} for v in g.vs]
+                # Create edges list
+                edges = [{"data": {"source": edge.source, "target": edge.target, "splc":edge["SPLC"]}} for edge in g.es if edge["SPLC"] > 1]
+
+                #mpa nodes
+                mpa_nodes = [{"data": {"id": v.index, "tipo": v["tipo"], "name":v["name"], "label": v["name"]}} for v in main_path.vs]
+                # Create edges list
+                mpa_edges = [{"data": {"source": edge.source, "target": edge.target}} for edge in main_path.es]
+            else:
+                spc(g)
+                ig.plot(g, layout="kk", edge_label=g.es["SPC"], target="g.svg")
+            
+                # Calculate the longest path considering 'SPC' attribute
+                longest_path = []
+                max_length = 0
+                longest_edge_path = []
+
+                visited = [False] * g.vcount()
+
+                for v in range(g.vcount()):
+                    path, edge_path, length = longest_path_spc(g, v, visited, [], [], 0, longest_path, longest_edge_path, max_length)
+                    if length > max_length:
+                        longest_path = path
+                        longest_edge_path = edge_path
+                        max_length = length
+
+                main_path = g.subgraph_edges(longest_edge_path)
+                print("Longest path:", longest_path)
+                print("edge:", longest_edge_path)
+                #print("Longest path length:", max_length)
+                #print (main_path)
+                ig.plot(main_path, layout="kk", edge_label=main_path.es["SPC"], target="main_path.svg",bbox=(3000, 3000))
+
+                #complete graph nodes
+                nodes = [{"data": {"id": v.index, "tipo": v["tipo"], "name":v["name"], "label": v["name"]}} for v in g.vs]
+                # Create edges list
+                edges = [{"data": {"source": edge.source, "target": edge.target, "spc":edge["SPC"]}} for edge in g.es if edge["SPC"] > 1]
+
+                #mpa nodes
+                mpa_nodes = [{"data": {"id": v.index, "tipo": v["tipo"], "name":v["name"], "label": v["name"]}} for v in main_path.vs]
+                # Create edges list
+                mpa_edges = [{"data": {"source": edge.source, "target": edge.target}} for edge in main_path.es]
+
+            # Create a dictionary in the desired format
+            cytoscape_json = {
+                "elements": {
+                    "nodes": nodes,
+                    "edges": edges
+                },
+                "mpa_elements": {
+                    "mpa_nodes": mpa_nodes,
+                    "mpa_edges": mpa_edges
+                }
+            }
+
+            #print(cytoscape_json["mpa_elements"])
+            return cytoscape_json
+    except Exception as e:
+        traceback.print_exc()
+        return (e)
     
 def longest_path_dfs(graph, vertex, visited, path, edge_path, path_length, max_path, max_edge_path, max_length):
     visited[vertex] = True
@@ -190,7 +322,7 @@ def spc(g):
             print("caminhos com o escolhido = ",len(paths_with_edge))
             g.es[index]["SPC"] = len(paths_with_edge)
         
-        ''' OLD VERSION
+        ''' OLD VERSION really slow
         edge_list = g.get_edgelist()
         # find all simple paths between start and end vertices
         for index,edge in enumerate(edge_list):
