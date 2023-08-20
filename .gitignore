@@ -1,0 +1,13 @@
+__pycache__/
+migrations/
+*.pyc
+*.pyo
+*.egg-info/
+db.sqlite3
+g.svg
+g2.svg
+main_path.svg
+my_csv.csv
+my_excel.xlsx
+Pipfile
+Pipfile.lock
