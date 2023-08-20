@@ -11,3 +11,5 @@ my_csv.csv
 my_excel.xlsx
 Pipfile
 Pipfile.lock
+.idea/
+.vscode/
