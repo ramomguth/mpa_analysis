@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import json
 import traceback
+from collections import defaultdict
 
 
 def save_altered_similarities(main_ref, params, user_id, project_id):
@@ -135,8 +136,8 @@ def make_mpa(tipo, user_id, project_id):
             sources = [record['source_id'] for record in data]
             targets = [record['target_id'] for record in data]
             comb = list(zip(sources, targets))
-          
-            
+
+            print("start")       
             query = "match (s:trabalho {user_id:$user_id, project_id:$project_id}) return s.id as source_id, s.title as source_name, s.tipo as tipo"
             result = session.run(query, user_id=user_id, project_id=project_id)
             #query = "match (s:Trabalho) return id(s) as source_id, s.title as source_name"
@@ -170,7 +171,7 @@ def make_mpa(tipo, user_id, project_id):
             if tipo == 'splc':
                 splc(g)
                 #ig.plot(g, vertex_label=l.vs["label"], target="l.svg")
-                ig.plot(g, layout="kk", edge_label=g.es["SPLC"], target="g.svg",bbox=(5000, 5000))
+                ig.plot(g, layout="kk", edge_label=g.es["SPLC"], target="g.svg",bbox=(1000, 1000))
                 longest_path = []
                 max_length = 0
                 longest_edge_path = []
@@ -319,7 +320,7 @@ def spc(g):
         for index, edge in enumerate(edge_list):
             # Filter paths that include the specific edge
             paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
-            print("caminhos com o escolhido = ",len(paths_with_edge))
+            #print("caminhos com o escolhido = ",len(paths_with_edge))
             g.es[index]["SPC"] = len(paths_with_edge)
         
         ''' OLD VERSION really slow
@@ -339,9 +340,52 @@ def spc(g):
             # filter paths that include the specific edge
             paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
             #print("caminhos com o escolhido = ",len(paths_with_edge))
-            g.es[index]["SPC"] = len(paths_with_edge)'''
+            g.es[index]["SPC"] = len(paths_with_edge)
+            '''
 
 def splc(g):
+    sinks = [v.index for v in g.vs if g.outdegree(v.index) == 0]
+    edge_list = g.get_edgelist()
+
+    # Cache for paths
+    paths_cache = defaultdict(list)
+
+    # Precompute unique predecessors for each node
+    predecessors_cache = {}
+    for v_index in range(g.vcount()):
+        predecessors = []
+        find_all_predecessors(g, v_index, predecessors)
+        unique_pred = list(set(p.index for p in predecessors))
+        predecessors_cache[v_index] = unique_pred
+
+    # Main loop over edges
+    for index, edge in enumerate(edge_list):
+        all_paths = []
+        current_node = edge[1]  # destination node
+        
+        # Fetch precomputed unique predecessors
+        unique_pred = predecessors_cache[current_node]
+
+        # Calculate or fetch cached paths
+        for pred in unique_pred:
+            pred_sink_key = (pred, "sinks")
+            if pred_sink_key not in paths_cache:
+                for s in sinks:
+                    paths = g.get_all_simple_paths(pred, s, mode="out")
+                    paths_cache[pred_sink_key].extend(paths)
+
+                all_paths.extend(paths_cache[pred_sink_key])
+            else:
+                all_paths.extend(paths_cache[pred_sink_key])
+
+        # Filtering paths containing the current edge
+        paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
+
+        # Update SPLC value
+        g.es[index]["SPLC"] = len(paths_with_edge)
+   
+    '''
+    OLD VERSION , VERY SLOW DUE TO NO CACHE
     sinks = [v.index for v in g.vs if g.outdegree(v.index) == 0]
     primary_sources = [v.index for v in g.vs if g.indegree(v.index) == 0]
     edge_list = g.get_edgelist()
@@ -367,7 +411,7 @@ def splc(g):
         
         paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
         #print("caminhos com o escolhido = ",len(paths_with_edge))            
-        g.es[index]["SPLC"] = len(paths_with_edge)
+        g.es[index]["SPLC"] = len(paths_with_edge)'''
 
 
 def find_all_predecessors(g, node, predecessors):

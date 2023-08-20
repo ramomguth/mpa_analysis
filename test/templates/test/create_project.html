@@ -131,39 +131,6 @@
             </a>
           </li>
         </ul>
-
-        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase">
-          <span>Saved reports</span>
-          <a class="link-secondary" href="#" aria-label="Add a new report">
-            <span data-feather="plus-circle" class="align-text-bottom"></span>
-          </a>
-        </h6>
-        <ul class="nav flex-column mb-2">
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span data-feather="file-text" class="align-text-bottom"></span>
-              Current month
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span data-feather="file-text" class="align-text-bottom"></span>
-              Last quarter
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span data-feather="file-text" class="align-text-bottom"></span>
-              Social engagement
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span data-feather="file-text" class="align-text-bottom"></span>
-              Year-end sale
-            </a>
-          </li>
-        </ul>
       </div>
     </nav>
 
@@ -175,35 +142,36 @@
     
     
   
-        <section class="vh-100">
-          <div class="container py-5 h-100">
-            <div class="row d-flex justify-content-center align-items-center h-100">
-              <div class="col-12 col-md-8 col-lg-6 col-xl-5">
-                <div class="card shadow-2-strong" style="border-radius: 1rem;">
-                  <div class="card-body p-5 text-center">
-                      <form method="post" id="create-project-form" action="{% url 'create_project' %}">
-                        {% csrf_token %}
-                    <h3 class="mb-5">Criar Projeto</h3>
-        
-                    <div class="form-outline mb-4">
-                      <input type="text" id="typeEmailX-2" name="nome" class="form-control form-control-lg" />
-                      <label class="form-label" for="typeEmailX-2">Nome</label>
+      <section class="vh-100">
+        <div class="container h-100">
+            <div class="row h-100">
+                <div class="col-12 col-md-8 col-lg-6 col-xl-5 d-flex align-items-start">
+                    <div class="card shadow-2-strong" style="border-radius: 1rem;">
+                        <div class="card-body p-5 text-center">
+                            <form method="post" id="create-project-form" action="{% url 'create_project' %}">
+                                {% csrf_token %}
+                                <h3 class="mb-5">Criar Projeto</h3>
+                
+                                <div class="form-outline mb-4">
+                                    <label class="form-label" for="typeEmailX-2">Nome</label>
+                                    <input type="text" id="typeEmailX-2" name="nome" class="form-control form-control-lg" />
+                                    
+                                </div>
+                
+                                <div class="form-outline mb-4">
+                                  <label class="form-label" for="typePasswordX-2">Descrição</label>
+                                  <input type="text" id="typePasswordX-2" name="descricao" class="form-control form-control-lg" />
+                              </div>
+    
+                                <input class="btn btn-primary btn-lg btn-block" type="submit" id="criar" value="Criar">
+             
+                            </form>
+                        </div>
                     </div>
-        
-                    <div class="form-outline mb-4">
-                      <input type="text" id="typePasswordX-2" name="descricao" class="form-control form-control-lg" />
-                      <label class="form-label" for="typePasswordX-2">Descrição</label>
-                    </div>
-
-                    <input class="btn btn-primary btn-lg btn-block" type="submit" id="criar" value="Criar">
-         
-                  </form>
-                  </div>
                 </div>
-              </div>
             </div>
-          </div>
-        </section>
+        </div>
+    </section>
         <script>
           document.getElementById("create-project-form").addEventListener("submit", function (e) {
             var submitButton = document.getElementById("criar");

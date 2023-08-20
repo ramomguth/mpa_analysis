@@ -12,6 +12,7 @@ from dataclasses import dataclass
 import igraph as ig
 from igraph import Graph
 import bcrypt
+import csv
 import numpy as np
 import pandas as pd
 import json, uuid
@@ -26,6 +27,9 @@ def index(request):
     if (not request.user.is_authenticated):
         return redirect('login_user')
     try:
+        project_id = request.COOKIES.get('project_id')
+        user_id = request.COOKIES.get('user_id')
+        #read_csv(user_id,project_id)
         driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
         with driver.session() as session: 
             q = f"""MATCH (p:Project{{user_id:"{request.session['user_id']}"}}) return p.name, p.descricao"""       #mostra a lista de projetos para o 
@@ -271,8 +275,88 @@ def scraper(request):
     #return render(request, 'test/scraper.html',{'works': result})
     return render(request, 'test/scraper.html')
 
+def read_csv(user_id, project_id):
+    with open('my_csv.csv', 'r', encoding='utf-8-sig') as csv_file:
+    # Create a CSV dictionary reader object
+        csv_reader = csv.DictReader(csv_file)
+        data = []
+        for row in csv_reader:
+        # Access values by column names
+            tup = (row['id'], row['titulo'])
+            data.append(tup)
+        tudo = []
+        refs = []
+        
+        principal = data[0][0]
+        principal_title = data[0][1]
+        for i in range(1,9):
+            ref_id = data[i][0]
+            ref_title = data[i][1]
+            ref_tup = (ref_id, ref_title)
+            refs.append(ref_tup)
+        tup = (principal, principal_title, refs)
+        tudo.append(tup)
+        refs = []
 
+        i = 11
+        while (i < 2080):
+            row = 1
+            k = i + 1
+            while (row != ''):
+                if (k > 2080): break
+                row = data[k][0]
+                if (row == ''): continue
+                ref_id = data[k][0]
+                ref_title = data[k][1]
+                ref_tup = (ref_id, ref_title)
+                refs.append(ref_tup)
+                k+=1
+            #print("k =",k)
+            k+=1
+            if (i > 2080): break
+            
+            principal = data[i][0]
+            principal_title = data[i][1]
+            i += 1
+            i = k
+            #print(principal_title)
+            tup = (principal, principal_title, refs)
+            tudo.append(tup)
+            refs = []
+    
+    driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+    with driver.session() as session:   
+        query = "CREATE (f:simil_flag {status:$status, id:$id, user_id:$user_id, project_id:$project_id})"
+        result = session.run(query, id=1, status='complete', user_id=user_id, project_id=project_id)   
+        for elem in tudo:
+            main_id = elem[0]
+            main_title = elem[1]
+            refs = elem[2]
+            ''' query = "match (t:trabalho {id:$main_id,user_id:$user_id, project_id:$project_id}) return t.id as main_id"
+            result = session.run(query, main_id = main_id, user_id=user_id, project_id=project_id)
+            query_main_id = result.single()
+            print(type(query_main_id))
+            if (not query_main_id):'''
+            query = "create (t:trabalho {id:$main_id, tipo:$tipo, title:$title, user_id:$user_id, project_id:$project_id}) return t"
+            result = session.run(query, main_id = main_id, tipo = 'primario', title = main_title, user_id=user_id, project_id=project_id)
+            #else:
+            #    print(type(query_main_id))
+            #    main_id = query_main_id
+            for ref in refs:
+                ref_id = ref[0]
+                ref_title = ref[1]
+                query = "match (t:trabalho {id:$ref_id,user_id:$user_id, project_id:$project_id}) return t.id as ref_id"
+                result = session.run(query, ref_id = ref_id, user_id=user_id, project_id=project_id)
+                query_ref_id = result.single()
+                if (not query_ref_id):
+                    query = "create (t:trabalho {id:$ref_id, tipo:$tipo, title:$title, user_id:$user_id, project_id:$project_id}) return t"
+                    result = session.run(query, ref_id = ref_id, tipo = 'referencia', title = ref_title, user_id=user_id, project_id=project_id)
+                else:
+                    ref_id = query_ref_id.value()
 
+                q = f"""MATCH (t:trabalho {{id:'{main_id}'}}), (r:trabalho{{id:'{ref_id}'}}) CREATE (t)-[a:referencia]->(r)"""
+                result = session.run(q)           
+            
 def similarities(request): 
     if (not request.user.is_authenticated):
         return redirect('login_user')
@@ -395,7 +479,10 @@ def mpa(request):
         try:
             post_data = json.loads(request.body)
             tipo = post_data[0]
+            st = time.time()
             cytoscape_json = make_mpa(tipo, user_id, project_id)
+            et = time.time()
+            print ("time = ", et - st)
 
             return JsonResponse(cytoscape_json)
         
