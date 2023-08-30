@@ -13,3 +13,5 @@ Pipfile
 Pipfile.lock
 .idea/
 .vscode/
+*.csv
+test\__pycache__
