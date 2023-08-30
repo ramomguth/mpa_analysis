@@ -158,7 +158,7 @@ def save_scraper_data(lista_trabalhos, user_id, project_id):
 					query = "CREATE (t:trabalho {title:$title, tipo:$tipo, id:$id, user_id:$user_id, project_id:$project_id})"
 					tx.run(query,title=reference, tipo='referencia', id=ref_id, user_id=user_id, project_id=project_id)
 
-					q = f"""MATCH (t:trabalho {{id:'{work_id}'}}), (r:trabalho{{id:'{ref_id}'}}) CREATE (t)-[a:referencia]->(r)"""
+					q = f"""MATCH (t:trabalho {{id:'{work_id}'}}) MATCH (r:trabalho{{id:'{ref_id}'}}) CREATE (t)-[a:referencia]->(r)"""
 					tx.run(q)
 			tx.commit()
 			return ("ok")

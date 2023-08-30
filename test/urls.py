@@ -15,6 +15,7 @@ urlpatterns = [
     path('create_project/', views.create_project, name='create_project'),
     path('delete_project/', views.delete_project, name='delete_project'),
     path('scraper/', views.scraper, name='scraper'),
+    path('import/', views.import_csv, name='import_csv'),
     path('set_project', views.set_project, name='set_project'),
     path('mpa/', views.mpa, name='mpa'),
     path('get_mpa_data/', views.get_mpa_data, name='get_mpa_data'),

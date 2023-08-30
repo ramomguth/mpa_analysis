@@ -8,7 +8,7 @@
     <meta name="description" content="">
     <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
     <meta name="generator" content="Hugo 0.104.2">
-    <title>Index</title>
+    <title>Importar</title>
 
     <link rel="canonical" href="https://getbootstrap.com/docs/5.2/examples/dashboard/">
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
@@ -120,9 +120,9 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="http://127.0.0.1:8000/import/">
+            <a class="nav-link" href="#">
               <span data-feather="bar-chart-2" class="align-text-bottom"></span>
-              Importar
+              Reports
             </a>
           </li>
           <li class="nav-item">
@@ -141,92 +141,33 @@
       </div>
 
 
-      <h3> Lista de Projetos </h3>
-      <div class="table-responsive">
-        <table class="table table-striped table-sm" id="projects-table">
-          <thead>
-            <tr>
-              <th scope="col">Nome</th>
-              <th scope="col">Descrição</th>
-              <th scope="col">Selecionar como projeto atual</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for record in projects %}
-            <tr>
-              <td>{{ record.0 }}</td>
-              <td>{{ record.1 }}</td>
-              <td> <input type="checkbox" data-name="{{ record.0 }}" name="project-checkbox" class="checkbox"> </td>
-            </tr>
-          {% endfor %}
-          </tbody>
-        </table>
-      </div>
 
-        <button type="button" class="btn btn-primary" id="create-project" style="background-color: seagreen"onclick="window.location.href='http://127.0.0.1:8000/create_project/'">Criar projeto</button>
-        <button type="button" class="btn btn-primary" id="delete-project" style="background-color: orangered">Deletar projeto</button>
-        
-
-
-        <p> </p>
-        {% csrf_token %}
-        <h4>Projeto atual = {{project_id}} </h4>
-
-        <script>
-              const checkboxes = document.querySelectorAll('input[name="project-checkbox"]');
-              checkboxes.forEach((checkbox) => {
-                checkbox.addEventListener('click', () => {
-                    let project_data = [];
-                    const checked = document.querySelector('input[type="checkbox"]:checked');
-                    if (checked) {
-                      project_data.push(checked.dataset.name);
-                    }
+        <section class="vh-100">
+            <div class="container h-100">
+                <div class="row h-100">
+                    <div class="col-12 col-md-8 col-lg-6 col-xl-5 d-flex align-items-start">
+                        <div class="card shadow-2-strong" style="border-radius: 1rem;">
+                            <div class="card-body p-5 text-center">
+                                <form method="post" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    <h3 class="mb-5">Importar Arquivo CSV</h3>
                     
-                    project_data = JSON.stringify(project_data);
-                    const csrfToken = document.getElementsByName("csrfmiddlewaretoken")[0].value;
-                    
-                    axios({
-                        method: "post",
-                        url: "{% url 'set_project' %}",
-                        data: project_data,
-                        headers: { 'Content-Type': 'application/json',
-                            'X-CSRFToken': csrfToken
-                        }
-                    })
-                    .then(response => {
-                      if (response.status === 200) 
-                        location.reload();
-                    })
-                    .catch(error => {
-                      console.error('Error:', error);
-                    });
-                });
-              });
-        </script>
-        
-        <script>
-            var delete_btn = document.getElementById("delete-project");  
-            const csrfToken = document.getElementsByName("csrfmiddlewaretoken")[0].value; 
-            delete_btn.addEventListener("click", function() {
-                axios({
-                    method: "delete",
-                    url: "{% url 'delete_project' %}",
-                    headers: { 'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                   }
-                })
-                .then(response => {
-                    if (response.status === 200) 
-                        location.reload();
-                    if (response.data === "empty") alert("Nenhum projeto selecionado!");
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                });
-            });
-        </script>
+                                    <div class="form-outline mb-4">
+            
+                                        <input type="file" class="form-control-file" id="fileInput" name="file" accept=".csv">    
+                                    </div>
+                                    <button type="submit" class="btn btn-primary" id="create-project" style="background-color: seagreen">Salvar</button>
+                 
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-      
+
+
   
       </div>
     </main>

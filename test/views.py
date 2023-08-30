@@ -27,8 +27,8 @@ def index(request):
     if (not request.user.is_authenticated):
         return redirect('login_user')
     try:
-        project_id = request.COOKIES.get('project_id')
-        user_id = request.COOKIES.get('user_id')
+        #project_id = request.COOKIES.get('project_id')
+        #user_id = request.COOKIES.get('user_id')
         #read_csv(user_id,project_id)
         driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
         with driver.session() as session: 
@@ -275,55 +275,66 @@ def scraper(request):
     #return render(request, 'test/scraper.html',{'works': result})
     return render(request, 'test/scraper.html')
 
-def read_csv(user_id, project_id):
-    with open('my_csv.csv', 'r', encoding='utf-8-sig') as csv_file:
-    # Create a CSV dictionary reader object
-        csv_reader = csv.DictReader(csv_file)
+def import_csv(request):
+    if (not request.user.is_authenticated):
+        return redirect('login_user')
+    if (request.user.is_authenticated and request.method != 'POST'): 
+        return render(request, 'test/import.html')
+    
+    try:
+        uploaded_file = request.FILES.get('file')
+        decoded_file = uploaded_file.read().decode('utf-8').splitlines()   
+        # Create a CSV reader object
+        csv_reader = csv.reader(decoded_file)
+        
         data = []
         for row in csv_reader:
-        # Access values by column names
-            tup = (row['id'], row['titulo'])
-            data.append(tup)
-        tudo = []
-        refs = []
+            data.append(row)
+        project_id = request.COOKIES.get('project_id')
+        user_id = request.COOKIES.get('user_id')
+        status = read_csv(data, user_id, project_id)
+        if status == 'ok':
+            return HttpResponse('ok')
         
-        principal = data[0][0]
-        principal_title = data[0][1]
-        for i in range(1,9):
-            ref_id = data[i][0]
-            ref_title = data[i][1]
-            ref_tup = (ref_id, ref_title)
-            refs.append(ref_tup)
-        tup = (principal, principal_title, refs)
-        tudo.append(tup)
+    except Exception as e:
+        traceback.print_exc()
+        return (e)
+
+    
+@dataclass
+class work:
+    title: str
+    references: []		#type: ignore
+
+def read_csv(data, user_id, project_id):
+    lenght = len(data)
+    tudo = []
+    refs = []
+    
+    i = 0
+    while i < lenght:
+        row = 1
+        k = i+1
+        while (row != ''):
+            if (k >= lenght): 
+                break
+            row = data[k][0] 
+            if (row == ''):
+                continue
+            refs.append(row)
+            k += 1
+        
+        principal = data[i][0]
+        k += 1
+        i = k
+        w = work(principal,refs)
+        tudo.append(w)
         refs = []
 
-        i = 11
-        while (i < 2080):
-            row = 1
-            k = i + 1
-            while (row != ''):
-                if (k > 2080): break
-                row = data[k][0]
-                if (row == ''): continue
-                ref_id = data[k][0]
-                ref_title = data[k][1]
-                ref_tup = (ref_id, ref_title)
-                refs.append(ref_tup)
-                k+=1
-            #print("k =",k)
-            k+=1
-            if (i > 2080): break
-            
-            principal = data[i][0]
-            principal_title = data[i][1]
-            i += 1
-            i = k
-            #print(principal_title)
-            tup = (principal, principal_title, refs)
-            tudo.append(tup)
-            refs = []
-    
+    status = save_scraper_data(tudo, user_id, project_id)
+    if status == 'ok':
+        return status
+'''
     driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
     with driver.session() as session:   
         query = "CREATE (f:simil_flag {status:$status, id:$id, user_id:$user_id, project_id:$project_id})"
@@ -332,11 +343,11 @@ def read_csv(user_id, project_id):
             main_id = elem[0]
             main_title = elem[1]
             refs = elem[2]
-            ''' query = "match (t:trabalho {id:$main_id,user_id:$user_id, project_id:$project_id}) return t.id as main_id"
-            result = session.run(query, main_id = main_id, user_id=user_id, project_id=project_id)
-            query_main_id = result.single()
-            print(type(query_main_id))
-            if (not query_main_id):'''
+            #query = "match (t:trabalho {id:$main_id,user_id:$user_id, project_id:$project_id}) return t.id as main_id"
+            #result = session.run(query, main_id = main_id, user_id=user_id, project_id=project_id)
+            #query_main_id = result.single()
+            #print(type(query_main_id))
+            #if (not query_main_id):
             query = "create (t:trabalho {id:$main_id, tipo:$tipo, title:$title, user_id:$user_id, project_id:$project_id}) return t"
             result = session.run(query, main_id = main_id, tipo = 'primario', title = main_title, user_id=user_id, project_id=project_id)
             #else:
@@ -355,7 +366,7 @@ def read_csv(user_id, project_id):
                     ref_id = query_ref_id.value()
 
                 q = f"""MATCH (t:trabalho {{id:'{main_id}'}}), (r:trabalho{{id:'{ref_id}'}}) CREATE (t)-[a:referencia]->(r)"""
-                result = session.run(q)           
+                result = session.run(q)'''           
             
 def similarities(request): 
     if (not request.user.is_authenticated):

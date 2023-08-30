@@ -171,7 +171,7 @@ def make_mpa(tipo, user_id, project_id):
             if tipo == 'splc':
                 splc(g)
                 #ig.plot(g, vertex_label=l.vs["label"], target="l.svg")
-                ig.plot(g, layout="kk", edge_label=g.es["SPLC"], target="g.svg",bbox=(1000, 1000))
+                ig.plot(g, layout="kk", edge_label=g.es["SPLC"], target="g.svg",bbox=(800, 400))
                 longest_path = []
                 max_length = 0
                 longest_edge_path = []
