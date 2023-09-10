@@ -474,17 +474,40 @@ def get_graph_data(request):
         print(result)
         return JsonResponse(result, safe=False)
 
-def mpa(request):
+
+def infos(request):
     if (not request.user.is_authenticated):
         return redirect('login_user')
-    
-    if request.method == 'GET':
-        return render(request, 'test/mpa.html')
     
     user_id = request.COOKIES.get('user_id')
     project_id = request.COOKIES.get('project_id')
     if (not project_id):
         return redirect('index')
+    
+    if request.method == 'GET':
+        return render(request, 'test/infos.html') #, {'projects': project_list, 'project_id': project_name}
+  
+    if request.method == 'POST':
+        try:
+            cytoscape_json = get_full_graph(user_id, project_id)
+            return JsonResponse(cytoscape_json)
+        
+        except Exception as e:
+            traceback.print_exc()
+            return HttpResponse(e)
+        
+
+def mpa(request):
+    if (not request.user.is_authenticated):
+        return redirect('login_user')
+    
+    user_id = request.COOKIES.get('user_id')
+    project_id = request.COOKIES.get('project_id')
+    if (not project_id):
+        return redirect('index')
+    
+    if request.method == 'GET':
+        return render(request, 'test/mpa.html')
     
     if request.method == 'POST':
         try:

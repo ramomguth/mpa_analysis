@@ -18,5 +18,6 @@ urlpatterns = [
     path('import/', views.import_csv, name='import_csv'),
     path('set_project', views.set_project, name='set_project'),
     path('mpa/', views.mpa, name='mpa'),
+    path('infos/', views.infos, name='infos'),
     path('get_mpa_data/', views.get_mpa_data, name='get_mpa_data'),
 ]

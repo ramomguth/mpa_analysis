@@ -23,7 +23,7 @@
     <style>
     #mpa {
             width: 100%;
-            height: 100vh;
+            height: 70vh;
             position: relative;
         }
     #cy {
@@ -265,15 +265,11 @@
                 }
             },
             {
-                "selector": "edge[source]",
+                "selector": 'edge[in_main_path = "true"]',
                 "style": {
-                    "line-color": "blue"
-                }
-            },
-            {
-                "selector": "edge[target]",
-                "style": {
-                    "line-color": "red"
+                    "line-color": "red",  
+                    "width": "6px",  
+                    "opacity": "0.75"
                 }
             },
             {
@@ -332,11 +328,15 @@
             var nodeLabel = node.data('label');
             var pos = node.renderedPosition();
             hoverLabel.innerHTML = nodeLabel;
-            //hoverLabel.style.left = pos.x + 'px';
-            //hoverLabel.style.top = pos.y + 'px';
-            hoverLabel.style.left = '20vw';
-            hoverLabel.style.top = '400px';
-            //hoverLabel.style.width = '90vw';
+            var pos = node.renderedPosition();
+            hoverLabel.innerHTML = nodeLabel;
+            var offset = 500;
+            var labelRect = hoverLabel.getBoundingClientRect();
+            var cyRect = cy.container().getBoundingClientRect();
+            hoverLabel.style.left = pos.x + cyRect.left - labelRect.width / 2 + 'px';
+            hoverLabel.style.top = pos.y + cyRect.top - labelRect.height + offset + 'px';
+            //console.log(hoverLabel.style.top)
+
             hoverLabel.style.display = 'block';
         });
 
@@ -368,7 +368,9 @@
                 "selector": "node",
                 "style": {
                     "content": "data(name)",
-                    "font-size": "12px",
+                    "font-size": "10px",
+                    'width': '500px', 
+                    'height': 'px',
                     "text-valign": "center",
                     "text-halign": "center",
                     "background-color": "#555",
@@ -378,11 +380,11 @@
             }, {
                 selector: 'node[tipo="primario"]',
                 style: {
-                    shape: 'circle',
-                    'background-color': 'pink',
+                    shape: 'roundrectangle',
+                    'background-color': 'lightblue',
                     "text-valign": "center",
                     "text-halign": "center",
-                    label: 'data(id)'
+                    label: 'data(name)'
                 }
             },
             {
@@ -391,7 +393,7 @@
                     shape: 'roundrectangle',
                     'background-color': 'mediumseagreen',
                     "z-index": "1",
-                    label: 'data(id)',
+                    label: 'data(name)',
                 }
             },
             {
@@ -443,22 +445,16 @@
             }, 
             ],
             layout: {
-                name: 'cose',
-                idealEdgeLength: 100,
-                nodeOverlap: 20,
-                refresh: 20,
-                fit: false,
-                padding: 30,
+                name: 'breadthfirst',
+                directed: true,
+                fit: true,
+                spacingFactor: 0.10,
+                avoidOverlap: true,
+                maximalAdjustments: 0,
+                nodeDimensionsIncludeLabels: false,
+                animate: false,
                 randomize: false,
-                componentSpacing: 100,
-                nodeRepulsion: 400000,
-                edgeElasticity: 100,
-                nestingFactor: 5,
-                gravity: 80,
-                numIter: 1000,
-                initialTemp: 200,
-                coolingFactor: 0.95,
-                minTemp: 1.0
+                circle: false,
             } 
         });
 
@@ -467,12 +463,30 @@
             var nodeLabel = node.data('label');
             var pos = node.renderedPosition();
             hoverLabel.innerHTML = nodeLabel;
-            //hoverLabel.style.left = pos.x + 'px';
-            //hoverLabel.style.top = pos.y + 'px';
-            hoverLabel.style.left = '20vw';
-            hoverLabel.style.top = '400px';
-            //hoverLabel.style.width = '90vw';
+            var pos = node.renderedPosition();
+            hoverLabel.innerHTML = nodeLabel;
+            var offset = 50;
+            var labelRect = hoverLabel.getBoundingClientRect();
+            var cyRect = mpa_cy.container().getBoundingClientRect();
+            
+            hoverLabel.style.left = pos.x + cyRect.left - labelRect.width / 2 + 'px';
+            hoverLabel.style.top = pos.y + cyRect.top - labelRect.height - offset + 'px';
+            //console.log(hoverLabel.style.top);
+
             hoverLabel.style.display = 'block';
+
+            /*name: 'breadthfirst',
+                directed: true,
+                fit: false,
+                padding: 30,
+                spacingFactor: 1.75,
+                avoidOverlap: true,
+                maximalAdjustments: 0,
+                nodeDimensionsIncludeLabels: false,
+                animate: false,
+                randomize: false,
+                circle: false,
+                orientation: 'horizontal'*/
         });
 
         // Hide the hover label when the mouse leaves the node
@@ -576,7 +590,16 @@
                     "target-arrow-shape": "triangle",
                     label: 'data(spc)',
                 }
-            }, {
+            },
+            {
+                "selector": 'edge[in_main_path = "true"]',
+                "style": {
+                    "line-color": "red",  
+                    "width": "6px",  
+                    "opacity": "0.75"
+                }
+            }, 
+            {
                 "selector": "node.unhighlighted",
                 "style": {
                     "opacity": "0.2"
@@ -632,9 +655,14 @@
             var nodeLabel = node.data('label');
             var pos = node.renderedPosition();
             hoverLabel.innerHTML = nodeLabel;
-            hoverLabel.style.left = pos.x + 'px';
-            hoverLabel.style.top = pos.y + 'px';
-            hoverLabel.style.display = 'block';
+            var pos = node.renderedPosition();
+            hoverLabel.innerHTML = nodeLabel;
+            var offset = 500;
+            var labelRect = hoverLabel.getBoundingClientRect();
+            var cyRect = cy.container().getBoundingClientRect();
+            hoverLabel.style.left = pos.x + cyRect.left - labelRect.width / 2 + 'px';
+            hoverLabel.style.top = pos.y + cyRect.top - labelRect.height + offset + 'px';
+            //console.log(hoverLabel.style.top)
         });
 
         // Hide the hover label when the mouse leaves the node
@@ -664,7 +692,9 @@
                 "selector": "node",
                 "style": {
                     "content": "data(name)",
-                    "font-size": "12px",
+                    "font-size": "10px",
+                    'width': '500px', 
+                    'height': 'px',
                     "text-valign": "center",
                     "text-halign": "center",
                     "background-color": "#555",
@@ -674,11 +704,11 @@
             }, {
                 selector: 'node[tipo="primario"]',
                 style: {
-                    shape: 'circle',
-                    'background-color': 'pink',
+                    shape: 'roundrectangle',
+                    'background-color': 'lightblue',
                     "text-valign": "center",
                     "text-halign": "center",
-                    label: 'data(id)'
+                    label: 'data(name)'
                 }
             },
             {
@@ -687,7 +717,7 @@
                     shape: 'roundrectangle',
                     'background-color': 'mediumseagreen',
                     "z-index": "1",
-                    label: 'data(id)',
+                    label: 'data(name)',
                 }
             },
             {
@@ -739,22 +769,16 @@
             }, 
             ],
             layout: {
-                name: 'cose',
-                idealEdgeLength: 100,
-                nodeOverlap: 20,
-                refresh: 20,
-                fit: false,
-                padding: 30,
+                name: 'breadthfirst',
+                directed: true,
+                fit: true,
+                spacingFactor: 0.10,
+                avoidOverlap: true,
+                maximalAdjustments: 0,
+                nodeDimensionsIncludeLabels: false,
+                animate: false,
                 randomize: false,
-                componentSpacing: 100,
-                nodeRepulsion: 400000,
-                edgeElasticity: 100,
-                nestingFactor: 5,
-                gravity: 80,
-                numIter: 1000,
-                initialTemp: 200,
-                coolingFactor: 0.95,
-                minTemp: 1.0
+                circle: false,
             } 
         });
 
@@ -763,11 +787,15 @@
             var nodeLabel = node.data('label');
             var pos = node.renderedPosition();
             hoverLabel.innerHTML = nodeLabel;
-            //hoverLabel.style.left = pos.x + 'px';
-            //hoverLabel.style.top = pos.y + 'px';
-            hoverLabel.style.left = '20vw';
-            hoverLabel.style.top = '400px';
-            //hoverLabel.style.width = '90vw';
+            var pos = node.renderedPosition();
+            hoverLabel.innerHTML = nodeLabel;
+            var offset = 50;
+            var labelRect = hoverLabel.getBoundingClientRect();
+            var cyRect = mpa_cy.container().getBoundingClientRect();
+            
+            hoverLabel.style.left = pos.x + cyRect.left - labelRect.width / 2 + 'px';
+            hoverLabel.style.top = pos.y + cyRect.top - labelRect.height - offset + 'px';
+
             hoverLabel.style.display = 'block';
         });
 
