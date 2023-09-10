@@ -111,8 +111,14 @@
           </li>
           <li class="nav-item">
             <a class="nav-link" href="http://127.0.0.1:8000/scraper/">
-              <span data-feather="file" class="align-text-bottom"></span>
+              <span data-feather="download" class="align-text-bottom"></span>
               Scraper
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="http://127.0.0.1:8000/import/">
+              <span data-feather="upload" class="align-text-bottom"></span>
+              Importar
             </a>
           </li>
           <li class="nav-item">
@@ -120,24 +126,17 @@
               <span data-feather="file" class="align-text-bottom"></span>
               Similarities
             </a>
+          <li class="nav-item">
+              <a class="nav-link" href="http://127.0.0.1:8000/infos/">
+                <span data-feather="book-open" class="align-text-bottom"></span>
+                Informações
+              </a>
+            </li>
           </li>
-       
           <li class="nav-item">
             <a class="nav-link" href="http://127.0.0.1:8000/mpa/">
               <span data-feather="bar-chart" class="align-text-bottom"></span>
               MPA
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span data-feather="bar-chart-2" class="align-text-bottom"></span>
-              Reports
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">
-              <span data-feather="layers" class="align-text-bottom"></span>
-              Integrations
             </a>
           </li>
         </ul>
@@ -151,7 +150,11 @@
         <h2 class="h2">Tabela de referencias</h2> 
       </div>
     
-      <h3>Modo de uso: Selecione cada par de referencias que sejam similares</h3>
+      <h3>Modo de uso: 
+        <br>Selecione cada par de referencias que sejam similares. 
+        <br> Basta clicar em cima do par que este será selecionado.
+        <br> A referencia com o checkbox marcado será considerada como a principal para todas as outras.
+      </h3>
       <p>
       {% csrf_token %}
       <div class="table-responsive">

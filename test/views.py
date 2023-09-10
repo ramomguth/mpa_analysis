@@ -334,39 +334,7 @@ def read_csv(data, user_id, project_id):
     status = save_scraper_data(tudo, user_id, project_id)
     if status == 'ok':
         return status
-'''
-    driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
-    with driver.session() as session:   
-        query = "CREATE (f:simil_flag {status:$status, id:$id, user_id:$user_id, project_id:$project_id})"
-        result = session.run(query, id=1, status='complete', user_id=user_id, project_id=project_id)   
-        for elem in tudo:
-            main_id = elem[0]
-            main_title = elem[1]
-            refs = elem[2]
-            #query = "match (t:trabalho {id:$main_id,user_id:$user_id, project_id:$project_id}) return t.id as main_id"
-            #result = session.run(query, main_id = main_id, user_id=user_id, project_id=project_id)
-            #query_main_id = result.single()
-            #print(type(query_main_id))
-            #if (not query_main_id):
-            query = "create (t:trabalho {id:$main_id, tipo:$tipo, title:$title, user_id:$user_id, project_id:$project_id}) return t"
-            result = session.run(query, main_id = main_id, tipo = 'primario', title = main_title, user_id=user_id, project_id=project_id)
-            #else:
-            #    print(type(query_main_id))
-            #    main_id = query_main_id
-            for ref in refs:
-                ref_id = ref[0]
-                ref_title = ref[1]
-                query = "match (t:trabalho {id:$ref_id,user_id:$user_id, project_id:$project_id}) return t.id as ref_id"
-                result = session.run(query, ref_id = ref_id, user_id=user_id, project_id=project_id)
-                query_ref_id = result.single()
-                if (not query_ref_id):
-                    query = "create (t:trabalho {id:$ref_id, tipo:$tipo, title:$title, user_id:$user_id, project_id:$project_id}) return t"
-                    result = session.run(query, ref_id = ref_id, tipo = 'referencia', title = ref_title, user_id=user_id, project_id=project_id)
-                else:
-                    ref_id = query_ref_id.value()
-
-                q = f"""MATCH (t:trabalho {{id:'{main_id}'}}), (r:trabalho{{id:'{ref_id}'}}) CREATE (t)-[a:referencia]->(r)"""
-                result = session.run(q)'''           
+             
             
 def similarities(request): 
     if (not request.user.is_authenticated):
@@ -377,8 +345,6 @@ def similarities(request):
     if (not project_id):
         return redirect('index')
     
-    #q=f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}})-[s:similar_to]->(r:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.id as a_ref_id, t.title as a_title, r.id as b_ref, r.title as b_title, s.value as similarity order by t.title""" 
-    #print(q)
     result = return_simil(user_id, project_id)
     return render(request, 'test/similarities.html',{'refs': result})
    
@@ -416,12 +382,11 @@ def save_similarities(request):
             unique_refs = list(set(flattened_list))
             unique_refs.remove(main_ref)
             
-            
-            st = time.time()
+            #st = time.time()
             #for elem in unique_refs:
             resp = save_altered_similarities(main_ref, unique_refs, user_id, project_id)
-            et = time.time()
-            print ("time = ", et - st)
+            #et = time.time()
+            #print ("time = ", et - st)
 
             if (resp == "ok"):
                 return HttpResponse(200)
@@ -466,15 +431,6 @@ def graph_test(request):
     else: 
         return render(request, 'test/login.html')
 
-
-def get_graph_data(request):
-    if request.method == 'GET':
-        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
-        result = simplequery(driver)
-        print(result)
-        return JsonResponse(result, safe=False)
-
-
 def infos(request):
     if (not request.user.is_authenticated):
         return redirect('login_user')
@@ -516,7 +472,7 @@ def mpa(request):
             st = time.time()
             cytoscape_json = make_mpa(tipo, user_id, project_id)
             et = time.time()
-            print ("time = ", et - st)
+            print ("mpa time = ", et - st)
 
             return JsonResponse(cytoscape_json)
         

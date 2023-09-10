@@ -145,24 +145,25 @@
                                 <form method="post" enctype="multipart/form-data">
                                     {% csrf_token %}
                                     <h3 class="mb-5">Importar Arquivo CSV</h3>
-                    
                                     <div class="form-outline mb-4">
-            
                                         <input type="file" class="form-control-file" id="fileInput" name="file" accept=".csv">    
                                     </div>
                                     <button type="submit" class="btn btn-primary" id="create-project" style="background-color: seagreen">Salvar</button>
-                 
                                 </form>
                             </div>
+                            
                         </div>
+                        
                     </div>
+                    <h3> Todo arquivo csv deve possuir a seguinte estrutura: 
+                        <br>
+                        O nome das referências não precisa ser necessariamente único
+                    </h3>
+                    <img src="{% static 'test/exemplo_csv.png' %}" alt="Exemplo de csv">
                 </div>
             </div>
+            
         </section>
-
-
-
-  
       </div>
     </main>
   </div>

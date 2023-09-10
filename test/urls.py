@@ -8,7 +8,6 @@ urlpatterns = [
     path('save_similarities', views.save_similarities, name='save_similarities'),
     path('finish_similarities', views.finish_similarities, name='finish_similarities'),
     path('graph_test/', views.graph_test, name='graph_test'),
-    path('get_graph_data/', views.get_graph_data, name='get_graph_data'),
     path('login/', views.login_user, name='login_user'),
     path('register/', views.register, name='register'),
     path('logout/', views.logout_view, name='logout_view'),
