@@ -285,7 +285,7 @@ def make_mpa(tipo, user_id, project_id):
                 #print("edge:", longest_edge_path)
                 #print("Longest path length:", max_length)
                 #print (main_path)
-                ig.plot(main_path, layout="kk", edge_label=main_path.es["SPLC"], target="main_path.svg",bbox=(1920, 1080)) 
+                #ig.plot(main_path, layout="kk", edge_label=main_path.es["SPLC"], target="main_path.svg",bbox=(1920, 1080)) 
 
                 #update the name to trim everything after a ) character is found
                 for node in mpa_nodes:
@@ -316,11 +316,11 @@ def make_mpa(tipo, user_id, project_id):
                         max_length = length
 
                 main_path = g.subgraph_edges(longest_edge_path)
-                print("Longest path:", longest_path)
-                print("edge:", longest_edge_path)
+                #print("Longest path:", longest_path)
+                #print("edge:", longest_edge_path)
                 #print("Longest path length:", max_length)
                 #print (main_path)
-                ig.plot(main_path, layout="kk", edge_label=main_path.es["SPC"], target="main_path.svg",bbox=(3000, 3000))
+                #ig.plot(main_path, layout="kk", edge_label=main_path.es["SPC"], target="main_path.svg",bbox=(3000, 3000))
 
                 #complete graph nodes
                 nodes = [{"data": {"id": v.index, "tipo": v["tipo"], "name":v["name"], "label": v["name"]}} for v in g.vs]
