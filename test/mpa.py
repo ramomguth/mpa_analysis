@@ -180,7 +180,19 @@ def get_full_graph(user_id, project_id):
             outdegree_result = {'id': max_outdegree_vertex_id, 'name': max_outdegree_vertex_name, 'degree': max(out_degrees)}
             total_degree_result = {'id': max_total_degree_vertex_id, 'name': max_total_degree_vertex_name, 'degree': max(total_degrees)}
 
+            indegree_list = [max_indegree_vertex_id, max(in_degrees), max_indegree_vertex_name]
+            outdegree_list = [max_outdegree_vertex_id, max(out_degrees), max_outdegree_vertex_name]
+            total_degree_list = [max_total_degree_vertex_id, max(total_degrees), max_total_degree_vertex_name]
+            
             cytoscape_json = {
+                "elements": {
+                    "nodes": nodes,
+                    "edges": edges
+                },
+                "infos": [indegree_list, outdegree_list, total_degree_list]
+            }
+            
+            '''cytoscape_json = {
                 "elements": {
                     "nodes": nodes,
                     "edges": edges
@@ -190,7 +202,7 @@ def get_full_graph(user_id, project_id):
                     "outdegree": outdegree_result,
                     "total_degree": total_degree_result
                 }
-            }
+            }'''
             return cytoscape_json
         
     except Exception as e:

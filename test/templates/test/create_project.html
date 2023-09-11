@@ -91,7 +91,7 @@
 <div class="container-fluid">
   <div class="row">
     <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
-      <div class="position-sticky pt-3 sidebar-sticky">
+        <div class="position-sticky pt-3 sidebar-sticky">
         <ul class="nav flex-column">
           <li class="nav-item">
             <a class="nav-link active" aria-current="page" href="http://127.0.0.1:8000/">
@@ -134,43 +134,31 @@
     </nav>
 
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-      <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h2 class="h2">Crie um novo projeto </h2>
-        
-      </div>
+        <div class="container">
+            <div class="col-6 justify-center align-items-center mt-4 mx-auto">
+        <div class="card shadow-2-strong" style="border-radius: 1rem;">
+            <div class="card-body p-5 text-center">
+                <form method="post" id="create-project-form" action="{% url 'create_project' %}">
+                    {% csrf_token %}
+                    <h3 class="mb-5">Criar Projeto</h3>
     
-    
-  
-      <section class="vh-100">
-        <div class="container h-100">
-            <div class="row h-100">
-                <div class="col-12 col-md-8 col-lg-6 col-xl-5 d-flex align-items-start">
-                    <div class="card shadow-2-strong" style="border-radius: 1rem;">
-                        <div class="card-body p-5 text-center">
-                            <form method="post" id="create-project-form" action="{% url 'create_project' %}">
-                                {% csrf_token %}
-                                <h3 class="mb-5">Criar Projeto</h3>
-                
-                                <div class="form-outline mb-4">
-                                    <label class="form-label" for="typeEmailX-2">Nome</label>
-                                    <input type="text" id="typeEmailX-2" name="nome" class="form-control form-control-lg" />
-                                    
-                                </div>
-                
-                                <div class="form-outline mb-4">
-                                  <label class="form-label" for="typePasswordX-2">Descrição</label>
-                                  <input type="text" id="typePasswordX-2" name="descricao" class="form-control form-control-lg" />
-                              </div>
-    
-                                <input class="btn btn-primary btn-lg btn-block" type="submit" id="criar" value="Criar">
-             
-                            </form>
-                        </div>
+                    <div class="form-outline mb-4">
+                        <label class="form-label" for="typeEmailX-2">Nome</label>
+                        <input type="text" id="typeEmailX-2" name="nome" class="form-control form-control-lg" />
+                        
                     </div>
-                </div>
-            </div>
+                    <label class="form-label">Descricao</label>
+                    <div class="form-floating mb-4">
+                        
+                        <textarea class="form-control" id="typePasswordX-2" name="descricao" style="height: 100px"></textarea>
+            
+                      </div>
+
+                    <input class="btn btn-primary btn-lg btn-block" type="submit" id="criar" value="Criar">
+    
+                </form>
+            </div>   
         </div>
-    </section>
         <script>
           document.getElementById("create-project-form").addEventListener("submit", function (e) {
             var submitButton = document.getElementById("criar");
@@ -183,6 +171,8 @@
           });        
         </script>
         </div>
+    </div>
+</div>
       </main>
   
       </div>

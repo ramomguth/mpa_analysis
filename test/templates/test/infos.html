@@ -167,10 +167,9 @@
             </div>
             
                 <button type="button" class="btn btn-primary col-1 mx-1" id="graph">Gerar grafico</button>
-                <div id="indeg">Trabalho mais citado: </div>
-                <div id="outdeg" >Trabalho que mais cita: </div>
-                <div id="totaldeg" >Trabalho mais conectado: </div>
-
+                <table id="data-table" class="table table-bordered" border="1">
+                    
+                </table>
         </div>
 
     </main>
@@ -198,7 +197,19 @@
                 }
             });
 
-            let indeg_data = response.data.infos.indegree;
+            const data = response.data.infos;
+            
+            let table = document.getElementById("data-table");
+            let htmlContent = '<tr><th>ID</th><th>Grau</th><th>Nome</th></tr>';
+            for (const [id, grau, nome] of data) {
+                //htmlContent += `<tr><td colspan="3" style="text-align:center;">${key.charAt(0).toUpperCase() + key.slice(1)}</td></tr>`;
+                //htmlContent += `<tr><td>${value.id}</td><td>${value.name}</td><td>${value.degree}</td></tr>`;
+                htmlContent += `<tr><td>${id}</td><td>${grau}</td><td>${nome}</td></tr>`;
+            }
+  
+            table.innerHTML = htmlContent;
+
+            /*let indeg_data = response.data.infos.indegree;
             let indegDiv = document.getElementById("indeg");
             let content = `ID: ${indeg_data.id}, Name: ${indeg_data.name}, Degree: ${indeg_data.degree}`;
             indegDiv.textContent += content;
@@ -211,7 +222,7 @@
             let total_data = response.data.infos.total_degree;
             let totalDiv = document.getElementById("totaldeg");
             content = `ID: ${total_data.id}, Name: ${total_data.name}, Degree: ${total_data.degree}`;
-            totalDiv.textContent += content;
+            totalDiv.textContent += content;*/
 
 
             graph_json_data = response.data;
@@ -340,7 +351,7 @@
                 var nodeLabel = node.data('label');
                 var pos = node.renderedPosition();
                 hoverLabel.innerHTML = nodeLabel;
-                var offset = 50;
+                var offset = 15;
                 var labelRect = hoverLabel.getBoundingClientRect();
                 var cyRect = cy.container().getBoundingClientRect();
                 
