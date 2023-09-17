@@ -241,9 +241,15 @@ def scraper(request):
             #pega o link do usuario
             body_unicode = request.body.decode('utf-8')
             post_data = json.loads(body_unicode)
-            result = scrape_sbc_event(post_data)
+            result = scrape_sbc_event(post_data, user_id, project_id)
             
             if result == "invalid_url":
+                response_data = {
+                    'status': result,
+                }
+                response = JsonResponse(response_data)
+                return response
+            if result == "url_already_used":
                 response_data = {
                     'status': result,
                 }

@@ -110,51 +110,59 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="http://127.0.0.1:8000/scraper/">
-              <span data-feather="download" class="align-text-bottom"></span>
-              Scraper
+            <a class="nav-link">
+              <span data-feather="corner-down-right" class="align-text-bottom"></span>
+              1 - Coletar Publicações
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="http://127.0.0.1:8000/import/">
-              <span data-feather="upload" class="align-text-bottom"></span>
-              Importar
-            </a>
+            <ul class="nav-item">
+                <li class="nav-item">
+                    <a class="nav-link" href="http://127.0.0.1:8000/scraper/">
+                <span data-feather="download" class="align-text-bottom"></span>
+                Scraper
+                </a>
+                </li>
+                <li class="nav-item">
+                <a class="nav-link" href="http://127.0.0.1:8000/import/">
+                  <span data-feather="upload" class="align-text-bottom"></span>
+                  Importar CSV
+                </a>
+                </li>
+            </ul>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="http://127.0.0.1:8000/similarities/">
               <span data-feather="file" class="align-text-bottom"></span>
-              Similarities
+              Resolver Similaridades
             </a>
           <li class="nav-item">
               <a class="nav-link" href="http://127.0.0.1:8000/infos/">
                 <span data-feather="book-open" class="align-text-bottom"></span>
-                Informações
+                Gráfico Completo
               </a>
             </li>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="http://127.0.0.1:8000/mpa/">
               <span data-feather="bar-chart" class="align-text-bottom"></span>
-              MPA
+              Main Path Analysis
             </a>
           </li>
         </ul>
-
-        
       </div>
     </nav>
 
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h2 class="h2">Tabela de referencias</h2> 
+        <h2 class="h2">Tabela de referências similares</h2> 
       </div>
-    
-      <h3>Modo de uso: 
-        <br>Selecione cada par de referencias que sejam similares. 
+      
+      <h4>Modo de uso: 
+        <br> Selecione cada par de referencias que sejam similares. 
         <br> Basta clicar em cima do par que este será selecionado.
         <br> A referencia com o checkbox marcado será considerada como a principal para todas as outras.
-      </h3>
+      </h4>
       <p>
       {% csrf_token %}
       <div class="table-responsive">
@@ -197,7 +205,7 @@
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-body">
-              <p>Utilizar a seguinte referencia como principal para todas as selecionadas?</p>
+              <h4>Utilizar a seguinte referencia como principal para todas as selecionadas?</h4>
               <p id="primary-ref-text" class="w-100" style="line-break: anywhere;"> </p>         
             </div>
             <div class="modal-footer">
@@ -207,10 +215,29 @@
           </div>
         </div>
       </div>
-      <!-- Button trigger modal -->
-      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#meu-modal" id="confirm"> Confirmar </button>
-      <button type="button" class="btn btn-primary" id="finalizar"> Finalizar Similaridades </button>
 
+      <div class="modal" id="finish-modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-body">
+              <h4>Finalizar o processo de similaridades?</h4>
+              <h4>Essa ação é irreversível!</h4>    
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+              <button type="button" class="btn btn-primary" id="modal-finish-save">Confirmar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#meu-modal" id="confirm"> Confirmar </button>
+      <button type="button" class="btn btn-primary" style="background-color: seagreen" data-bs-toggle="modal" data-bs-target="#finish-modal" id="finalizar"> Finalizar Processo de Similaridades </button>
+      
+      <h4>Ao clicar em finalizar processo: 
+        <br> Todos os pares de similaridades serão deletados; 
+        <br> Será possível realizar o MPA;
+      </h4>
 <script>
 	// Get the submit button
 	var confirmBtn = document.getElementById("confirm");
@@ -324,7 +351,7 @@
 		});
 });
 
-    let finish_button = document.getElementById("finalizar");
+    let finish_button = document.getElementById("modal-finish-save");
     let finish_flag = 1;
     finish_flag = JSON.stringify(finish_flag);
     const csrfToken = document.getElementsByName("csrfmiddlewaretoken")[0].value;
@@ -349,6 +376,7 @@
             console.error(error);
         });
     });
+    
 	/*
 	pra usar ajax fica res = json.loads(request.POST.get('my_data')) no back
 	$.ajax({

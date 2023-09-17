@@ -91,7 +91,7 @@
 <div class="container-fluid">
   <div class="row">
     <nav id="sidebarMenu" class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
-        <div class="position-sticky pt-3 sidebar-sticky">
+      <div class="position-sticky pt-3 sidebar-sticky">
         <ul class="nav flex-column">
           <li class="nav-item">
             <a class="nav-link active" aria-current="page" href="http://127.0.0.1:8000/">
@@ -100,33 +100,43 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="http://127.0.0.1:8000/scraper/">
-              <span data-feather="download" class="align-text-bottom"></span>
-              Scraper
+            <a class="nav-link">
+              <span data-feather="corner-down-right" class="align-text-bottom"></span>
+              1 - Coletar Publicações
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="http://127.0.0.1:8000/import/">
-              <span data-feather="upload" class="align-text-bottom"></span>
-              Importar
-            </a>
+            <ul class="nav-item">
+                <li class="nav-item">
+                    <a class="nav-link" href="http://127.0.0.1:8000/scraper/">
+                <span data-feather="download" class="align-text-bottom"></span>
+                Scraper
+                </a>
+                </li>
+                <li class="nav-item">
+                <a class="nav-link" href="http://127.0.0.1:8000/import/">
+                  <span data-feather="upload" class="align-text-bottom"></span>
+                  Importar CSV
+                </a>
+                </li>
+            </ul>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="http://127.0.0.1:8000/similarities/">
               <span data-feather="file" class="align-text-bottom"></span>
-              Similarities
+              Resolver Similaridades
             </a>
           <li class="nav-item">
               <a class="nav-link" href="http://127.0.0.1:8000/infos/">
                 <span data-feather="book-open" class="align-text-bottom"></span>
-                Informações
+                Gráfico Completo
               </a>
             </li>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="http://127.0.0.1:8000/mpa/">
               <span data-feather="bar-chart" class="align-text-bottom"></span>
-              MPA
+              Main Path Analysis
             </a>
           </li>
         </ul>

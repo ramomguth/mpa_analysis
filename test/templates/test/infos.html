@@ -126,33 +126,43 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="http://127.0.0.1:8000/scraper/">
-              <span data-feather="download" class="align-text-bottom"></span>
-              Scraper
+            <a class="nav-link">
+              <span data-feather="corner-down-right" class="align-text-bottom"></span>
+              1 - Coletar Publicações
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="http://127.0.0.1:8000/import/">
-              <span data-feather="upload" class="align-text-bottom"></span>
-              Importar
-            </a>
+            <ul class="nav-item">
+                <li class="nav-item">
+                    <a class="nav-link" href="http://127.0.0.1:8000/scraper/">
+                <span data-feather="download" class="align-text-bottom"></span>
+                Scraper
+                </a>
+                </li>
+                <li class="nav-item">
+                <a class="nav-link" href="http://127.0.0.1:8000/import/">
+                  <span data-feather="upload" class="align-text-bottom"></span>
+                  Importar CSV
+                </a>
+                </li>
+            </ul>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="http://127.0.0.1:8000/similarities/">
               <span data-feather="file" class="align-text-bottom"></span>
-              Similarities
+              Resolver Similaridades
             </a>
           <li class="nav-item">
               <a class="nav-link" href="http://127.0.0.1:8000/infos/">
                 <span data-feather="book-open" class="align-text-bottom"></span>
-                Informações
+                Gráfico Completo
               </a>
             </li>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="http://127.0.0.1:8000/mpa/">
               <span data-feather="bar-chart" class="align-text-bottom"></span>
-              MPA
+              Main Path Analysis
             </a>
           </li>
         </ul>
@@ -166,9 +176,8 @@
                 <h2 class="h2">Gráfico Completo</h2>   
             </div>
             
-                <button type="button" class="btn btn-primary col-1 mx-1" id="graph">Gerar grafico</button>
+                <button type="button" class="btn btn-primary col-1 mx-1" style="background-color: seagreen" id="graph">Gerar gráfico</button>
                 <table id="data-table" class="table table-bordered" border="1">
-                    
                 </table>
         </div>
 
@@ -198,17 +207,16 @@
             });
 
             const data = response.data.infos;
-            
             let table = document.getElementById("data-table");
             let htmlContent = '<tr><th>ID</th><th>Grau</th><th>Nome</th></tr>';
             for (const [id, grau, nome] of data) {
-                //htmlContent += `<tr><td colspan="3" style="text-align:center;">${key.charAt(0).toUpperCase() + key.slice(1)}</td></tr>`;
-                //htmlContent += `<tr><td>${value.id}</td><td>${value.name}</td><td>${value.degree}</td></tr>`;
                 htmlContent += `<tr><td>${id}</td><td>${grau}</td><td>${nome}</td></tr>`;
             }
   
             table.innerHTML = htmlContent;
-
+            
+            //htmlContent += `<tr><td colspan="3" style="text-align:center;">${key.charAt(0).toUpperCase() + key.slice(1)}</td></tr>`;
+            //htmlContent += `<tr><td>${value.id}</td><td>${value.name}</td><td>${value.degree}</td></tr>`;
             /*let indeg_data = response.data.infos.indegree;
             let indegDiv = document.getElementById("indeg");
             let content = `ID: ${indeg_data.id}, Name: ${indeg_data.name}, Degree: ${indeg_data.degree}`;
@@ -272,6 +280,42 @@
                         'background-color': 'mediumseagreen',
                         "z-index": "1",
                         label: 'data(id)',
+                    }
+                },
+                {
+                    selector: 'node[max_indegree = "true"]',
+                    style: {
+                        shape: 'circle',
+                        'width': '40px',
+                        'height': '40px',
+                        'background-color': 'yellow',
+                        "text-valign": "center",
+                        "text-halign": "center",
+                        label: 'data(id)'
+                    }
+                },
+                {
+                    selector: 'node[max_outdegree = "true"]',
+                    style: {
+                        shape: 'circle',
+                        'width': '40px',
+                        'height': '40px',
+                        'background-color': 'yellow',
+                        "text-valign": "center",
+                        "text-halign": "center",
+                        label: 'data(id)'
+                    }
+                },
+                {
+                    selector: 'node[max_total_degree = "true"]',
+                    style: {
+                        shape: 'circle',
+                        'width': '40px',
+                        'height': '40px',
+                        'background-color': 'yellow',
+                        "text-valign": "center",
+                        "text-halign": "center",
+                        label: 'data(id)'
                     }
                 },
                 {

@@ -159,9 +159,6 @@ def get_full_graph(user_id, project_id):
            
             g.vs["label"] = g.vs["name"]   
 
-            nodes = [{"data": {"id": v.index, "tipo": v["tipo"], "name":v["name"], "label": v["name"]}} for v in g.vs]
-            edges = [{"data": {"source": edge.source, "target": edge.target}} for edge in g.es]
-
             in_degrees = g.indegree()
             out_degrees = g.outdegree()
             total_degrees = g.degree()
@@ -180,10 +177,24 @@ def get_full_graph(user_id, project_id):
             outdegree_result = {'id': max_outdegree_vertex_id, 'name': max_outdegree_vertex_name, 'degree': max(out_degrees)}
             total_degree_result = {'id': max_total_degree_vertex_id, 'name': max_total_degree_vertex_name, 'degree': max(total_degrees)}
 
-            indegree_list = [max_indegree_vertex_id, max(in_degrees), max_indegree_vertex_name]
-            outdegree_list = [max_outdegree_vertex_id, max(out_degrees), max_outdegree_vertex_name]
-            total_degree_list = [max_total_degree_vertex_id, max(total_degrees), max_total_degree_vertex_name]
+            indegree_list = [max_indegree_vertex_id, "Indegree = " + str(max(in_degrees)), max_indegree_vertex_name]
+            outdegree_list = [max_outdegree_vertex_id, "Outdegree = " + str(max(out_degrees)), max_outdegree_vertex_name]
+            total_degree_list = [max_total_degree_vertex_id,"Total Degree = " + str(max(total_degrees)), max_total_degree_vertex_name]
             
+            nodes = [{"data": {
+                            "id": v.index, 
+                            "tipo": v["tipo"], 
+                            "name":v["name"], 
+                            "label": v["name"],
+                            "max_indegree": str(v.index == max_indegree_vertex_id).lower(),
+                            "max_outdegree": str(v.index == max_outdegree_vertex_id).lower(),
+                            "max_total_degree": str(v.index == max_total_degree_vertex_id).lower()
+                        }
+                    } for v in g.vs]
+            edges = [{"data": {"source": edge.source, "target": edge.target}} for edge in g.es]
+            
+            for node in nodes:
+                if node["data"]["max_indegree"] == True: print(node)
             cytoscape_json = {
                 "elements": {
                     "nodes": nodes,
@@ -191,18 +202,6 @@ def get_full_graph(user_id, project_id):
                 },
                 "infos": [indegree_list, outdegree_list, total_degree_list]
             }
-            
-            '''cytoscape_json = {
-                "elements": {
-                    "nodes": nodes,
-                    "edges": edges
-                },
-                "infos": {
-                    "indegree": indegree_result,
-                    "outdegree": outdegree_result,
-                    "total_degree": total_degree_result
-                }
-            }'''
             return cytoscape_json
         
     except Exception as e:

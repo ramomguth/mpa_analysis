@@ -21,15 +21,31 @@ class work:
     references: []		#type: ignore
 
 
-def scrape_sbc_event(url):
+def scrape_sbc_event(url, user_id, project_id):
 	urls = []
 
 	try:
 		response = requests.head(url)
 	except requests.exceptions.RequestException as e:
-		traceback.print_exc()
 		return ("invalid_url")
 	
+	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+	try:
+		with driver.session() as session: 
+			tx = session.begin_transaction()
+			query = "MATCH (u:user_url {url:$url, user_id:$user_id, project_id:$project_id}) return count (u) as co"
+			co = tx.run (query, url=url, user_id=user_id, project_id=project_id)
+			url_already_used = co.single().value()
+			print (url_already_used)
+			if (url_already_used != 0):
+				return ("url_already_used")
+			else:
+				query = "CREATE (u:user_url {url:$url, user_id:$user_id, project_id:$project_id})"
+				tx.run(query, url=url, user_id=user_id, project_id=project_id)
+				tx.commit()
+	except Exception as e:
+		traceback.print_exc()
+		return ("error")
 	req=requests.get(url)
 	content=req.text
 	soup=BeautifulSoup(content, "html.parser")
