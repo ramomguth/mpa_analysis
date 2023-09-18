@@ -46,7 +46,6 @@ def index(request):
             else:
                 project_name = "Nenhum projeto selecionado"
             user_id = request.COOKIES.get('user_id')
-            #compare_refs(user_id, project_id)
             return render(request, 'test/index.html', {'projects': project_list, 'project_id': project_name})
     except Exception as e:
         traceback.print_exc()
@@ -168,9 +167,11 @@ def create_project(request):
             driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
             with driver.session() as session:
                 id = uuid.uuid4()
-                q = f"""CREATE (p:Project{{name:"{nome}", descricao:"{descricao}", user_id:"{user_id}", project_id:"{id}"}}) return p"""
-                result = session.run(q).single()
+                q = f"""CREATE (p:Project{{name:"{nome}", descricao:"{descricao}", user_id:"{user_id}", project_id:"{id}"}}) return p.project_id"""
+                result = session.run(q).single().value()
+                project_id = result
                 response = redirect('index')
+                response.set_cookie('project_id', project_id)
                 return response
         except Exception as e:
             return (e)
