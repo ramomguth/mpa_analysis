@@ -156,14 +156,14 @@
 
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h2 class="h2">Tabela de referências similares</h2> 
+        <h4>Tabela de referências similares</h4> 
       </div>
       
-      <h4>Modo de uso: 
+      <h6>Modo de uso: 
         <br> Selecione cada par de referencias que sejam similares. 
         <br> Basta clicar em cima do par que este será selecionado.
         <br> A referencia com o checkbox marcado será considerada como a principal para todas as outras.
-      </h4>
+      </h6>
       <p>
       {% csrf_token %}
       <div class="table-responsive">
@@ -235,10 +235,10 @@
       <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#meu-modal" id="confirm"> Confirmar </button>
       <button type="button" class="btn btn-primary" style="background-color: seagreen" data-bs-toggle="modal" data-bs-target="#finish-modal" id="finalizar"> Finalizar Processo de Similaridades </button>
       
-      <h4>Ao clicar em finalizar processo: 
+      <h6>Ao clicar em finalizar processo: 
         <br> Todos os pares de similaridades serão deletados; 
         <br> Será possível realizar o MPA;
-      </h4>
+      </h6>
 <script>
 	// Get the submit button
 	var confirmBtn = document.getElementById("confirm");

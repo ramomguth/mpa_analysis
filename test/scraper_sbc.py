@@ -20,6 +20,35 @@ class work:
     title: str
     references: []		#type: ignore
 
+def read_csv(data, user_id, project_id):
+    lenght = len(data)
+    tudo = []
+    refs = []
+    
+    i = 0
+    while i < lenght:
+        row = 1
+        k = i+1
+        while (row != ''):
+            if (k >= lenght): 
+                break
+            row = data[k][0] 
+            if (row == ''):
+                continue
+            refs.append(row)
+            k += 1
+        
+        principal = data[i][0]
+        k += 1
+        i = k
+        w = work(principal,refs)
+        tudo.append(w)
+        refs = []
+
+    status = save_scraper_data(tudo, user_id, project_id)
+    if status == 'ok':
+        return status
+	
 
 def scrape_sbc_event(url, user_id, project_id):
 	urls = []
@@ -253,28 +282,28 @@ def compare_refs(user_id, project_id):
 def return_simil(user_id, project_id):
 	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	with driver.session() as session: 
-		q = f"""MATCH (f:simil_flag {{user_id:'{user_id}', project_id:'{project_id}'}}) return f.status"""
-		result = session.run(q).single().value()
-		
-		"""
-		MATCH (t:trabalho {tipo: "ref"})<-[:referencia]-(r)
-		WITH t, count(r) as incomingRefs
-		WHERE incomingRefs = 1
-		DETACH DELETE t
-		"""
-		if result == 'no_similarity_done': 
-			compare_refs(user_id, project_id)
+		try:
+			q = f"""MATCH (f:simil_flag {{user_id:'{user_id}', project_id:'{project_id}'}}) return f.status"""
+			result = session.run(q).single().value()
+			
+			
+			if result == 'no_similarity_done': 
+				compare_refs(user_id, project_id)
 
-		q=f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}})-[s:similar_to]->(r:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.id as a_ref_id, t.title as a_title, r.id as b_ref, r.title as b_title, s.value as similarity order by t.title""" 
-		result = session.run(q)
-		ref_list=[]
-		for record in result:
-			#val1.append(record['a_ref_id'])
-			ref_list.append(record.values())  
-			    
-		for index,element in enumerate(ref_list):
-			simil = round(float(element[4]),3)
-			ref_list[index][4] = simil
-		
-		return ref_list
+			q=f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}})-[s:similar_to]->(r:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.id as a_ref_id, t.title as a_title, r.id as b_ref, r.title as b_title, s.value as similarity order by t.title""" 
+			result = session.run(q)
+			ref_list=[]
+			for record in result:
+				#val1.append(record['a_ref_id'])
+				ref_list.append(record.values())  
+					
+			for index,element in enumerate(ref_list):
+				simil = round(float(element[4]),3)
+				ref_list[index][4] = simil
+			
+			return ref_list
+		except Exception as e:
+			traceback.print_exc()
+			ref_list = []
+			return ref_list
 		

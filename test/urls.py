@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('alert_and_redirect/', views.alert_and_redirect, name='alert_and_redirect'),
     #path('<int:question_id>/results/', views.results, name='results'),
     path('similarities/', views.similarities, name='similarities'),
     path('save_similarities', views.save_similarities, name='save_similarities'),
@@ -11,6 +12,7 @@ urlpatterns = [
     path('login/', views.login_user, name='login_user'),
     path('register/', views.register, name='register'),
     path('logout/', views.logout_view, name='logout_view'),
+    path('projects/', views.projects, name='projects'),
     path('create_project/', views.create_project, name='create_project'),
     path('delete_project/', views.delete_project, name='delete_project'),
     path('scraper/', views.scraper, name='scraper'),

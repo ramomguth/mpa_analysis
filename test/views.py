@@ -51,11 +51,44 @@ def index(request):
         traceback.print_exc()
         return (e)
 
+def alert_and_redirect(request, message, redirect_url):
+    return render(request, 'test/alert_and_redirect.html', {
+        'message': message,
+        'redirect_url': redirect_url
+    })    
+
+def projects(request):
+    if (not request.user.is_authenticated):
+        return redirect('login_user')
+    try:
+        #project_id = request.COOKIES.get('project_id')
+        #user_id = request.COOKIES.get('user_id')
+        #read_csv(user_id,project_id)
+        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        with driver.session() as session: 
+            q = f"""MATCH (p:Project{{user_id:"{request.session['user_id']}"}}) return p.name, p.descricao"""       #mostra a lista de projetos para o 
+            neo4j_query_result = session.run(q)                                                                     #usuario na tela
+            project_list = []
+            for record in neo4j_query_result:
+                project_list.append(record.values())
+            
+            # mostra o projeto selecionado atualmente
+            project_id = request.COOKIES.get('project_id')
+            if (project_id):
+                q = f"""MATCH (p:Project{{project_id:"{project_id}"}}) return p.name"""       #retorna o nome do projeto 
+                project_name = session.run(q).value()[0] 
+            else:
+                project_name = "Nenhum projeto selecionado"
+            user_id = request.COOKIES.get('user_id')
+            return render(request, 'test/projects.html', {'projects': project_list, 'project_id': project_name})
+    except Exception as e:
+        traceback.print_exc()
+        return (e)
+
 
 def login_user(request):
     if request.method != 'POST':
         return render(request, 'test/login.html')
-    
     email = request.POST['email']
     password = request.POST['password']
     try:
@@ -199,31 +232,38 @@ def set_project(request):
 def delete_project(request):
     if (request.user.is_authenticated and request.method == 'DELETE'):
         user_id = request.session['user_id']
-        project_id = request.COOKIES.get('project_id')
-
-        if (not project_id):
+        project_id_cookie = request.COOKIES.get('project_id')
+        project_name = (json.loads(request.body))
+        if (not project_name):
             response = HttpResponse("empty")
             return response
-        else:
+        else:            
             driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
             with driver.session() as session:
                 tx = session.begin_transaction()
                 try:
-                    query = "MATCH (f:simil_flag {user_id:$user_id, project_id:$project_id}) delete f"
-                    result = tx.run (query, user_id=user_id, project_id=project_id)
+                    query = "MATCH (p:Project {user_id:$user_id, name:$project_name}) return p.project_id"
+                    project_id = tx.run (query, user_id=user_id, project_name=project_name).single().value()
+
                     query = "MATCH (p:Project {user_id:$user_id, project_id:$project_id}) delete p"
                     result = tx.run (query, user_id=user_id, project_id=project_id)
+
+                    query = "MATCH (f:simil_flag {user_id:$user_id, project_id:$project_id}) delete f"
+                    result = tx.run (query, user_id=user_id, project_id=project_id)  
                     query = "MATCH (t:trabalho {user_id:$user_id, project_id:$project_id}) detach delete t"
                     result = tx.run (query, user_id=user_id, project_id=project_id)
                     tx.commit()
-
-                    expires = datetime.now() - timedelta(days=365)  # Set the expired date in the past
-                    response = HttpResponse("ok")
-                    response.set_cookie('project_id', '', expires=expires)
-                    return response
+                    if (project_id_cookie == project_id):
+                        expires = datetime.now() - timedelta(days=365)  # Set the expired date in the past
+                        response = HttpResponse("ok")
+                        response.set_cookie('project_id', '', expires=expires)
+                        return response
+                    else:
+                        response = HttpResponse("ok")
+                        return response
                 except Exception as e:
                     tx.rollback()
-                    return HttpResponse(e)
+                    return HttpResponse(e)            
     else:
         return redirect('login_user')
   
@@ -233,7 +273,9 @@ def scraper(request):
         return render(request, 'test/login.html')
     project_id = request.COOKIES.get('project_id')
     if (not project_id):
-        return redirect('index') 
+        message = 'Necessário selecionar um projeto antes!'
+        redirect_url = reverse('index')  
+        return alert_and_redirect(request, message, redirect_url)
      
     if (request.user.is_authenticated and request.method == 'POST'):
         project_id = request.COOKIES.get('project_id')
@@ -285,15 +327,18 @@ def scraper(request):
 def import_csv(request):
     if (not request.user.is_authenticated):
         return redirect('login_user')
+    project_id = request.COOKIES.get('project_id')
+    if (not project_id):
+        message = 'Necessário selecionar um projeto antes!'
+        redirect_url = reverse('index')  
+        return alert_and_redirect(request, message, redirect_url)
     if (request.user.is_authenticated and request.method != 'POST'): 
         return render(request, 'test/import.html')
-    
     try:
         uploaded_file = request.FILES.get('file')
         decoded_file = uploaded_file.read().decode('utf-8').splitlines()   
         # Create a CSV reader object
-        csv_reader = csv.reader(decoded_file)
-        
+        csv_reader = csv.reader(decoded_file)  
         data = []
         for row in csv_reader:
             data.append(row)
@@ -302,47 +347,11 @@ def import_csv(request):
         status = read_csv(data, user_id, project_id)
         if status == 'ok':
             return HttpResponse('ok')
-        
     except Exception as e:
         traceback.print_exc()
         return (e)
 
-    
-@dataclass
-class work:
-    title: str
-    references: []		#type: ignore
-
-def read_csv(data, user_id, project_id):
-    lenght = len(data)
-    tudo = []
-    refs = []
-    
-    i = 0
-    while i < lenght:
-        row = 1
-        k = i+1
-        while (row != ''):
-            if (k >= lenght): 
-                break
-            row = data[k][0] 
-            if (row == ''):
-                continue
-            refs.append(row)
-            k += 1
-        
-        principal = data[i][0]
-        k += 1
-        i = k
-        w = work(principal,refs)
-        tudo.append(w)
-        refs = []
-
-    status = save_scraper_data(tudo, user_id, project_id)
-    if status == 'ok':
-        return status
-             
-            
+           
 def similarities(request): 
     if (not request.user.is_authenticated):
         return redirect('login_user')
@@ -350,7 +359,9 @@ def similarities(request):
     user_id = request.COOKIES.get('user_id')
     project_id = request.COOKIES.get('project_id')
     if (not project_id):
-        return redirect('index')
+        message = 'Necessário selecionar um projeto antes!'
+        redirect_url = reverse('index')  
+        return alert_and_redirect(request, message, redirect_url)
     
     result = return_simil(user_id, project_id)
     return render(request, 'test/similarities.html',{'refs': result})
@@ -358,21 +369,14 @@ def similarities(request):
   
   
 def save_similarities(request):
-    #post_data = json.loads(request.body)
-    #my_list = [(key, value) for key, value in post_data.items()]
-    #print(my_list[0][1])
     if (not request.user.is_authenticated):
         return redirect('login_user')
-    
     user_id = request.COOKIES.get('user_id')
     project_id = request.COOKIES.get('project_id')
     if (not project_id):
         return redirect('index')
-    
     if request.method == 'POST':
         try:
-            #table_data = json.loads(request.POST.get('my_data'))
-            #table_data = list(table_data.values())
             post_data = list(json.loads(request.body))
             if not post_data[0]:
                 return HttpResponse("none")
@@ -394,7 +398,6 @@ def save_similarities(request):
             resp = save_altered_similarities(main_ref, unique_refs, user_id, project_id)
             #et = time.time()
             #print ("time = ", et - st)
-
             if (resp == "ok"):
                 return HttpResponse(200)
         except Exception as e:
@@ -403,6 +406,8 @@ def save_similarities(request):
         
 
 def finish_similarities(request):
+    if (not request.user.is_authenticated):
+        return redirect('login_user')
     if request.method == 'POST':
         try:
             post_data = json.loads(request.body)
@@ -441,20 +446,29 @@ def graph_test(request):
 def infos(request):
     if (not request.user.is_authenticated):
         return redirect('login_user')
-    
     user_id = request.COOKIES.get('user_id')
     project_id = request.COOKIES.get('project_id')
     if (not project_id):
-        return redirect('index')
+        message = 'Necessário selecionar um projeto antes!'
+        redirect_url = reverse('index')  
+        return alert_and_redirect(request, message, redirect_url)
     
     if request.method == 'GET':
-        return render(request, 'test/infos.html') #, {'projects': project_list, 'project_id': project_name}
+        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        with driver.session() as session:
+            query = "MATCH (f:simil_flag {user_id:$user_id, project_id:$project_id}) return f.status"
+            result = session.run (query, user_id=user_id, project_id=project_id).single().value()
+            if result != 'complete':
+                message = 'Necessário finalizar o processo de similaridades!'
+                redirect_url = reverse('similarities')  
+                return alert_and_redirect(request, message, redirect_url)
+            else:
+                return render(request, 'test/mpa.html')
   
     if request.method == 'POST':
         try:
             cytoscape_json = get_full_graph(user_id, project_id)
             return JsonResponse(cytoscape_json)
-        
         except Exception as e:
             traceback.print_exc()
             return HttpResponse(e)
@@ -467,22 +481,30 @@ def mpa(request):
     user_id = request.COOKIES.get('user_id')
     project_id = request.COOKIES.get('project_id')
     if (not project_id):
-        return redirect('index')
-    
+        message = 'Necessário selecionar um projeto antes!'
+        redirect_url = reverse('index')  
+        return alert_and_redirect(request, message, redirect_url)
     if request.method == 'GET':
-        return render(request, 'test/mpa.html')
+        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        with driver.session() as session:
+            query = "MATCH (f:simil_flag {user_id:$user_id, project_id:$project_id}) return f.status"
+            result = session.run (query, user_id=user_id, project_id=project_id).single().value()
+            if result != 'complete':
+                message = 'Necessário finalizar o processo de similaridades!'
+                redirect_url = reverse('similarities')  
+                return alert_and_redirect(request, message, redirect_url)
+            else:
+                return render(request, 'test/mpa.html')
     
     if request.method == 'POST':
         try:
             post_data = json.loads(request.body)
             tipo = post_data[0]
-            st = time.time()
+            #st = time.time()
             cytoscape_json = make_mpa(tipo, user_id, project_id)
-            et = time.time()
-            print ("mpa time = ", et - st)
-
+            #et = time.time()
+            #print ("mpa time = ", et - st)
             return JsonResponse(cytoscape_json)
-        
         except Exception as e:
             traceback.print_exc()
             return HttpResponse(e)
