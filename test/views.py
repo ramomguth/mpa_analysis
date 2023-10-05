@@ -22,7 +22,9 @@ from .mpa import *
 #import requests 
 import traceback
 
-# Create your views here.
+#teste outra BRANCH
+#
+#
 def index(request):
     if (not request.user.is_authenticated):
         return redirect('login_user')
