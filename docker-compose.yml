@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    environment:
+      - NEO4J_URI=bolt://db:7687
+
+  db:
+    image: neo4j:latest
+    ports:
+      - "7687:7687"
+      - "7474:7474"
+    environment:
+      - NEO4J_AUTH=neo4j/superman

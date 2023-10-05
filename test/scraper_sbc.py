@@ -5,9 +5,9 @@ import uuid
 from dataclasses import dataclass
 import traceback
 from itertools import combinations
-import itertools
-import pandas as pd
-import numpy as np
+#import itertools
+#import pandas as pd
+#import numpy as np
 import requests
 from concurrent.futures import ThreadPoolExecutor
 #import teste

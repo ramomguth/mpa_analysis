@@ -1,8 +1,8 @@
 from neo4j import GraphDatabase
 import igraph as ig
 from igraph import Graph
-import numpy as np
-import pandas as pd
+#import numpy as np
+#import pandas as pd
 import json
 import traceback
 from collections import defaultdict

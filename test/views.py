@@ -13,8 +13,8 @@ import igraph as ig
 from igraph import Graph
 import bcrypt
 import csv
-import numpy as np
-import pandas as pd
+#import numpy as np
+#import pandas as pd
 import json, uuid
 import itertools
 from .scraper_sbc import *
@@ -30,7 +30,7 @@ def index(request):
         #project_id = request.COOKIES.get('project_id')
         #user_id = request.COOKIES.get('user_id')
         #read_csv(user_id,project_id)
-        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
         with driver.session() as session: 
             q = f"""MATCH (p:Project{{user_id:"{request.session['user_id']}"}}) return p.name, p.descricao"""       #mostra a lista de projetos para o 
             neo4j_query_result = session.run(q)                                                                     #usuario na tela
@@ -139,7 +139,7 @@ def register(request):
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
     try:
-        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
         with driver.session() as session: 
             q = f"""MATCH (u:User{{email:"{email}"}}) return count (u)"""
             res = session.run(q).single().value()
