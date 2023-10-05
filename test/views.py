@@ -63,10 +63,7 @@ def projects(request):
     if (not request.user.is_authenticated):
         return redirect('login_user')
     try:
-        #project_id = request.COOKIES.get('project_id')
-        #user_id = request.COOKIES.get('user_id')
-        #read_csv(user_id,project_id)
-        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
         with driver.session() as session: 
             q = f"""MATCH (p:Project{{user_id:"{request.session['user_id']}"}}) return p.name, p.descricao"""       #mostra a lista de projetos para o 
             neo4j_query_result = session.run(q)                                                                     #usuario na tela
@@ -94,7 +91,7 @@ def login_user(request):
     email = request.POST['email']
     password = request.POST['password']
     try:
-        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
         with driver.session() as session: 
             q = f"""MATCH (u:User{{email:"{email}"}}) return u.name, u.user_id, u.passwd, u.email"""
             result = session.run(q)
@@ -199,7 +196,7 @@ def create_project(request):
     user_id = request.session['user_id']
     if (nome and descricao and user_id):
         try:
-            driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+            driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
             with driver.session() as session:
                 id = uuid.uuid4()
                 q = f"""CREATE (p:Project{{name:"{nome}", descricao:"{descricao}", user_id:"{user_id}", project_id:"{id}"}}) return p.project_id"""
@@ -219,7 +216,7 @@ def set_project(request):
         if (post_data):
             project_name = post_data[0]
             try:
-                driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+                driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
                 with driver.session() as session:
                     q = f"""MATCH (p:Project{{name:'{project_name}',user_id:'{user_id}'}}) return p.project_id"""
                     project_id = session.run(q).value()[0]  #value traz uma lista com 1 elemento, o [0] pega ele
@@ -240,7 +237,7 @@ def delete_project(request):
             response = HttpResponse("empty")
             return response
         else:            
-            driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+            driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
             with driver.session() as session:
                 tx = session.begin_transaction()
                 try:
@@ -413,7 +410,7 @@ def finish_similarities(request):
     if request.method == 'POST':
         try:
             post_data = json.loads(request.body)
-            driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+            driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
             user_id = request.COOKIES.get('user_id')
             project_id = request.COOKIES.get('project_id')
 
@@ -456,7 +453,7 @@ def infos(request):
         return alert_and_redirect(request, message, redirect_url)
     
     if request.method == 'GET':
-        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
         with driver.session() as session:
             query = "MATCH (f:simil_flag {user_id:$user_id, project_id:$project_id}) return f.status"
             result = session.run (query, user_id=user_id, project_id=project_id).single().value()
@@ -487,7 +484,7 @@ def mpa(request):
         redirect_url = reverse('index')  
         return alert_and_redirect(request, message, redirect_url)
     if request.method == 'GET':
-        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
         with driver.session() as session:
             query = "MATCH (f:simil_flag {user_id:$user_id, project_id:$project_id}) return f.status"
             result = session.run (query, user_id=user_id, project_id=project_id).single().value()
