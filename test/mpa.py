@@ -255,7 +255,7 @@ def make_mpa(tipo, user_id, project_id):
             if tipo == 'splc':
                 splc(g)
                 #ig.plot(g, vertex_label=l.vs["label"], target="l.svg")
-                ig.plot(g, layout="kk", edge_label=g.es["SPLC"], target="g.svg",bbox=(800, 400))
+                #ig.plot(g, layout="kk", edge_label=g.es["SPLC"], target="g.svg",bbox=(800, 400))
                 longest_path = []
                 max_length = 0
                 longest_edge_path = []
@@ -308,7 +308,7 @@ def make_mpa(tipo, user_id, project_id):
                     
             else:
                 spc(g)
-                ig.plot(g, layout="kk", edge_label=g.es["SPC"], target="g.svg")
+                #ig.plot(g, layout="kk", edge_label=g.es["SPC"], target="g.svg")
             
                 # Calculate the longest path considering 'SPC' attribute
                 longest_path = []
@@ -437,43 +437,7 @@ def spc(g):
             paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
             #print("caminhos com o escolhido = ",len(paths_with_edge))
             g.es[index]["SPC"] = len(paths_with_edge)
-        
-        ''' OLD VERSION really slow
-        edge_list = g.get_edgelist()
-        # find all simple paths between start and end vertices
-        for index,edge in enumerate(edge_list):
-            all_paths = []
-            #print("edge = ",g.vs[edge[0]]['name'],g.vs[edge[1]]['name'])
 
-            for ps in primary_sources:
-                for s in sinks:
-                    paths = g.get_all_simple_paths(ps, s, mode="out")
-                    all_paths.extend(paths)
-                #all_paths = g.get_all_simple_paths(g.vs.find(0), g.vs.find(name=end_vertex).index, mode="out")
-            
-            #print("todos caminhos", all_paths)  
-            # filter paths that include the specific edge
-            paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
-            #print("caminhos com o escolhido = ",len(paths_with_edge))
-            g.es[index]["SPC"] = len(paths_with_edge)
-
-
-            TEST VERSION
-            sinks = [v.index for v in g.vs if g.outdegree(v.index) == 0]
-            primary_sources = [v.index for v in g.vs if g.indegree(v.index) == 0]
-            
-            # Create a dictionary to store all paths from each source to each sink
-            paths_dict = {(ps, s): g.get_all_simple_paths(ps, s, mode="out") for ps in primary_sources for s in sinks}
-            
-            all_paths = [path for paths in paths_dict.values() for path in paths]
-            
-            edge_list = g.get_edgelist()
-            
-            for index, edge in enumerate(edge_list):
-                # Filter paths that include the specific edge
-                paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
-                g.es[index]["SPC"] = len(paths_with_edge)
-            '''
 
 def splc(g):
     sinks = [v.index for v in g.vs if g.outdegree(v.index) == 0]
@@ -515,37 +479,7 @@ def splc(g):
 
         # Update SPLC value
         g.es[index]["SPLC"] = len(paths_with_edge)
-   
-    '''
-    OLD VERSION , VERY SLOW DUE TO NO CACHE
-    sinks = [v.index for v in g.vs if g.outdegree(v.index) == 0]
-    primary_sources = [v.index for v in g.vs if g.indegree(v.index) == 0]
-    edge_list = g.get_edgelist()
-    
-    # find all simple paths between start and end vertices
-    for index,edge in enumerate(edge_list):
-        all_paths = []
-        current_node = edge_list[index][1]  #tem o no de destino, tipo c->e, e eh o destino
-        #print("edge = ",g.vs[edge[0]]['name'],g.vs[edge[1]]['name'])
-        predecessors = []
-        unique_pred = []
-        find_all_predecessors(g, current_node, predecessors)
-        for p in predecessors:
-            unique_pred.append(p.index) #p["name"]
-        unique_pred = list(set(unique_pred))
-
-        for elem in unique_pred:
-            for s in sinks:
-                paths = g.get_all_simple_paths(elem, s, mode="out")
-                all_paths.extend(paths)        
-            #all_paths = g.get_all_simple_paths(g.vs.find(0), g.vs.find(name=end_vertex).index, mode="out")                
-            #print("todos caminhos", all_paths)  ps-72 sink-373
-        
-        paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
-        #print("caminhos com o escolhido = ",len(paths_with_edge))            
-        g.es[index]["SPLC"] = len(paths_with_edge)'''
-
-
+ 
 def find_all_predecessors(g, node, predecessors):
     pred = g.vs[node].predecessors()
     if len(pred) == 0:

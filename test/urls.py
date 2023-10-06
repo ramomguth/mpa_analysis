@@ -4,7 +4,6 @@ from . import views
 urlpatterns = [
     path('', views.index, name='index'),
     path('alert_and_redirect/', views.alert_and_redirect, name='alert_and_redirect'),
-    #path('<int:question_id>/results/', views.results, name='results'),
     path('similarities/', views.similarities, name='similarities'),
     path('save_similarities', views.save_similarities, name='save_similarities'),
     path('finish_similarities', views.finish_similarities, name='finish_similarities'),

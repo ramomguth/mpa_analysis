@@ -65,7 +65,7 @@ def scrape_sbc_event(url, user_id, project_id):
 			query = "MATCH (u:user_url {url:$url, user_id:$user_id, project_id:$project_id}) return count (u) as co"
 			co = tx.run (query, url=url, user_id=user_id, project_id=project_id)
 			url_already_used = co.single().value()
-			print (url_already_used)
+			#print (url_already_used)
 			if (url_already_used != 0):
 				return ("url_already_used")
 			else:
@@ -160,7 +160,8 @@ def scrape_sbc_event(url, user_id, project_id):
 	return trabalhos	
 
 '''
-similarity status: 
+similarity status:
+	nothing_done
 	no_similarity_done
 	similarity_done
 	in_progress

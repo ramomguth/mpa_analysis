@@ -35,9 +35,9 @@ def index(request):
         driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
         with driver.session() as session: 
             q = f"""MATCH (p:Project{{user_id:"{request.session['user_id']}"}}) return p.name, p.descricao"""       #mostra a lista de projetos para o 
-            neo4j_query_result = session.run(q)                                                                     #usuario na tela
+            query_result = session.run(q)                                                                     #usuario na tela
             project_list = []
-            for record in neo4j_query_result:
+            for record in query_result:
                 project_list.append(record.values())
             
             # mostra o projeto selecionado atualmente
@@ -202,6 +202,11 @@ def create_project(request):
                 q = f"""CREATE (p:Project{{name:"{nome}", descricao:"{descricao}", user_id:"{user_id}", project_id:"{id}"}}) return p.project_id"""
                 result = session.run(q).single().value()
                 project_id = result
+
+                query = "CREATE (f:simil_flag {status:$status, id:$id, user_id:$user_id, project_id:$project_id})"
+                simil_flag_id = str(uuid.uuid4())
+                session.run(query, status='nothing_done', id=simil_flag_id, user_id=user_id, project_id=project_id)
+
                 response = redirect('index')
                 response.set_cookie('project_id', project_id)
                 return response
@@ -345,7 +350,11 @@ def import_csv(request):
         user_id = request.COOKIES.get('user_id')
         status = read_csv(data, user_id, project_id)
         if status == 'ok':
-            return HttpResponse('ok')
+            redirect_url = reverse('index')  
+            message = 'Arquivo importado com sucesso!'
+            return alert_and_redirect(request, message, redirect_url)
+             
+        
     except Exception as e:
         traceback.print_exc()
         return (e)
@@ -422,9 +431,6 @@ def finish_similarities(request):
                 query = "MATCH (a:trabalho {user_id:$user_id, project_id:$project_id})-[s:similar_to]->(b:trabalho {user_id:$user_id, project_id:$project_id}) delete s"
                 result = tx.run (query, user_id=user_id, project_id=project_id)
 
-                #query = "MATCH (t:trabalho {user_id:$user_id, project_id:$project_id})<-[:referencia]-(r) WITH t, count(r) as incomingRefs WHERE incomingRefs = 1 set t.show = 'false'"
-                #result = tx.run (query, user_id=user_id, project_id=project_id)
-
                 resp = {
                     'status': 'ok'
                 }
@@ -456,13 +462,13 @@ def infos(request):
         driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
         with driver.session() as session:
             query = "MATCH (f:simil_flag {user_id:$user_id, project_id:$project_id}) return f.status"
-            result = session.run (query, user_id=user_id, project_id=project_id).single().value()
+            result = session.run(query, user_id=user_id, project_id=project_id).single().value()
             if result != 'complete':
                 message = 'Necessário finalizar o processo de similaridades!'
                 redirect_url = reverse('similarities')  
                 return alert_and_redirect(request, message, redirect_url)
             else:
-                return render(request, 'test/mpa.html')
+                return render(request, 'test/infos.html')
   
     if request.method == 'POST':
         try:

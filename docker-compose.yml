@@ -17,3 +17,7 @@ services:
       - "7474:7474"
     environment:
       - NEO4J_AUTH=neo4j/superman
+    volumes:
+      - neo4j_data:/data
+volumes:
+  neo4j_data:
