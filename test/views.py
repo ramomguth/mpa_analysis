@@ -59,31 +59,6 @@ def alert_and_redirect(request, message, redirect_url):
         'redirect_url': redirect_url
     })    
 
-def projects(request):
-    if (not request.user.is_authenticated):
-        return redirect('login_user')
-    try:
-        driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
-        with driver.session() as session: 
-            q = f"""MATCH (p:Project{{user_id:"{request.session['user_id']}"}}) return p.name, p.descricao"""       #mostra a lista de projetos para o 
-            neo4j_query_result = session.run(q)                                                                     #usuario na tela
-            project_list = []
-            for record in neo4j_query_result:
-                project_list.append(record.values())
-            
-            # mostra o projeto selecionado atualmente
-            project_id = request.COOKIES.get('project_id')
-            if (project_id):
-                q = f"""MATCH (p:Project{{project_id:"{project_id}"}}) return p.name"""       #retorna o nome do projeto 
-                project_name = session.run(q).value()[0] 
-            else:
-                project_name = "Nenhum projeto selecionado"
-            user_id = request.COOKIES.get('user_id')
-            return render(request, 'test/projects.html', {'projects': project_list, 'project_id': project_name})
-    except Exception as e:
-        traceback.print_exc()
-        return (e)
-
 
 def login_user(request):
     if request.method != 'POST':
@@ -95,13 +70,13 @@ def login_user(request):
         with driver.session() as session: 
             q = f"""MATCH (u:User{{email:"{email}"}}) return u.name, u.user_id, u.passwd, u.email"""
             result = session.run(q)
-            neo4j_response=[]           #eh necessario salvar a resposta numa lista, senao e consumida e fica nula
+            query_response=[]           #eh necessario salvar a resposta numa lista, senao e consumida e fica nula
             for record in result:       #o proprio if(result.value()) consome a resposta
-                neo4j_response = record.values() 
+                query_response = record.values() 
 
-            if neo4j_response and bcrypt.checkpw(password.encode('utf-8'), neo4j_response[2].encode('utf-8')):
-                id = str(neo4j_response[1])
-                user = authenticate(request, username=neo4j_response[0], password=password)
+            if query_response and bcrypt.checkpw(password.encode('utf-8'), query_response[2].encode('utf-8')):
+                id = str(query_response[1])
+                user = authenticate(request, username=query_response[0], password=password)
                 if user:
                     login(request, user)
                     request.session['user_id'] = id
@@ -164,6 +139,11 @@ def register(request):
                     }
                     response = JsonResponse(response_data)
                     response.set_cookie('user_id', id)
+
+                    #Caso exista algum cookie de projeto exclui o mesmo
+                    #afinal quem acabou de criar um cadastro nao deve ter projetos
+                    expires = datetime.now() - timedelta(days=365)  
+                    response.set_cookie('project_id', '', expires=expires)
                     return response
             else:
                 response_data = {
@@ -352,9 +332,7 @@ def import_csv(request):
         if status == 'ok':
             redirect_url = reverse('index')  
             message = 'Arquivo importado com sucesso!'
-            return alert_and_redirect(request, message, redirect_url)
-             
-        
+            return alert_and_redirect(request, message, redirect_url)    
     except Exception as e:
         traceback.print_exc()
         return (e)

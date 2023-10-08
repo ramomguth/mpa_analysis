@@ -93,7 +93,7 @@
   <input class="form-control form-control-dark w-100 rounded-0 border-0" type="text" placeholder="Search" aria-label="Search">
   <div class="navbar-nav">
     <div class="nav-item text-nowrap">
-      <a class="nav-link px-3" href="http://127.0.0.1:8000/logout/">Sair</a>
+      <a class="nav-link px-3" href="{% url 'logout_view' %}">Sair</a>
     </div>
   </div>
 </header>
@@ -104,7 +104,7 @@
       <div class="position-sticky pt-3 sidebar-sticky">
         <ul class="nav flex-column">
           <li class="nav-item">
-            <a class="nav-link active" aria-current="page" href="http://127.0.0.1:8000/">
+            <a class="nav-link active" aria-current="page" href="{% url 'index' %}">
               <span data-feather="home" class="align-text-bottom"></span>
               Home
             </a>
@@ -118,13 +118,13 @@
           <li class="nav-item">
             <ul class="nav-item">
                 <li class="nav-item">
-                    <a class="nav-link" href="http://127.0.0.1:8000/scraper/">
+                    <a class="nav-link" href="{% url 'scraper' %}">
                 <span data-feather="download" class="align-text-bottom"></span>
                 Scraper
                 </a>
                 </li>
                 <li class="nav-item">
-                <a class="nav-link" href="http://127.0.0.1:8000/import/">
+                <a class="nav-link" href="{% url 'import_csv' %}">
                   <span data-feather="upload" class="align-text-bottom"></span>
                   Importar CSV
                 </a>
@@ -132,24 +132,23 @@
             </ul>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="http://127.0.0.1:8000/similarities/">
+            <a class="nav-link" href="{% url 'similarities' %}">
               <span data-feather="file" class="align-text-bottom"></span>
               2. Resolver Similaridades
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="http://127.0.0.1:8000/mpa/">
+            <a class="nav-link" href="{% url 'mpa' %}">
               <span data-feather="bar-chart" class="align-text-bottom"></span>
               3. Main Path Analysis
             </a>
           </li>
           <li class="nav-item">
-              <a class="nav-link" href="http://127.0.0.1:8000/infos/">
+              <a class="nav-link" href="{% url 'infos' %}">
                 <span data-feather="book-open" class="align-text-bottom"></span>
                 4. Gráfico Completo
               </a>
             </li>
-          </li>
         </ul>
       </div>
     </nav>

@@ -23,7 +23,7 @@
         </button>
         <div class="navbar-nav">
             <div class="nav-item text-nowrap">
-                <a class="nav-link px-3" href="http://127.0.0.1:8000/logout/">Sair</a>
+                <a class="nav-link px-3" href="{% url 'logout_view' %}">Sair</a>
             </div>
         </div>
     </header>
@@ -70,7 +70,7 @@
                                             
                                                 <p class="text-center text-muted mt-5 mb-0" id="register-response"> </p> 
                                             
-                                                <p class="text-center mt-5 mb-0">Já possui uma conta? <a href="http://127.0.0.1:8000/login/"
+                                                <p class="text-center mt-5 mb-0">Já possui uma conta? <a href="{% url 'login_user' %}"
                                                     class="fw-bold text-body"><u>Login aqui</u></a></p>
                                             </form>
                                         </div>
