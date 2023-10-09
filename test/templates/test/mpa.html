@@ -330,7 +330,10 @@
                 initialTemp: 200,
                 coolingFactor: 0.95,
                 minTemp: 1.0
-            } 
+            },
+            minZoom: 0.3,
+            maxZoom: 3,
+            wheelSensitivity: 0.2
         });
         
         var hoverLabel = document.createElement('div');
@@ -470,7 +473,10 @@
                 animate: false,
                 randomize: false,
                 circle: false,
-            } 
+            },
+            minZoom: 0.5,
+            maxZoom: 2,
+            wheelSensitivity: 0.2
         });
 
         mpa_cy.on('mouseover', 'node', function(event) {
@@ -657,7 +663,10 @@
                 initialTemp: 200,
                 coolingFactor: 0.95,
                 minTemp: 1.0
-            } 
+            },
+            minZoom: 0.3,
+            maxZoom: 3,
+            wheelSensitivity: 0.2
         });
         
         var hoverLabel = document.createElement('div');
@@ -794,7 +803,10 @@
                 animate: false,
                 randomize: false,
                 circle: false,
-            } 
+            },
+            minZoom: 0.5,
+            maxZoom: 2,
+            wheelSensitivity: 0.2
         });
 
         mpa_cy.on('mouseover', 'node', function(event) {

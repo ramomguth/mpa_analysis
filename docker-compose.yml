@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
   web:
@@ -9,6 +9,8 @@ services:
       - db
     environment:
       - NEO4J_URI=bolt://db:7687
+    volumes:
+      - sqlite_data:/app
 
   db:
     image: neo4j:latest
@@ -21,3 +23,4 @@ services:
       - neo4j_data:/data
 volumes:
   neo4j_data:
+  sqlite_data:

@@ -58,7 +58,7 @@ def scrape_sbc_event(url, user_id, project_id):
 	except requests.exceptions.RequestException as e:
 		return ("invalid_url")
 	
-	driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
+	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	try:
 		with driver.session() as session: 
 			tx = session.begin_transaction()
@@ -168,7 +168,7 @@ similarity status:
 	complete
 '''
 def save_scraper_data(lista_trabalhos, user_id, project_id):
-	driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
+	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	try:
 		with driver.session() as session: 
 			tx = session.begin_transaction()
@@ -219,7 +219,7 @@ def string_similarity(str1, str2):
     return result.ratio()
 
 def compare_refs(user_id, project_id):
-	driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
+	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	try:
 		with driver.session() as session: 
 			q = f"""MATCH (t:trabalho{{user_id:'{user_id}', project_id:'{project_id}'}}) return t.title as title, t.tipo as tipo, t.id as id"""
@@ -281,7 +281,7 @@ def compare_refs(user_id, project_id):
 
 
 def return_simil(user_id, project_id):
-	driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
+	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	with driver.session() as session: 
 		try:
 			q = f"""MATCH (f:simil_flag {{user_id:'{user_id}', project_id:'{project_id}'}}) return f.status"""
