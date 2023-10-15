@@ -150,13 +150,14 @@
 
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
 
-      <p class="h3"> Insira abaixo a URL do evento SBC para as referências e trabalhos serem coletadas:</p>
-      <p class="h3"> Exemplo: https://sol.sbc.org.br/index.php/wit/issue/view/509</p>
+      <p class="h6"> Insira abaixo a URL do evento SBC para a coleta das publicações:</p>
+      <p class="h6"> Exemplo: https://sol.sbc.org.br/index.php/wit/issue/view/509</p>
 
       <div class="form-outline mb-4">
         <input type="text" id="scrape-url" placeholder="Insira a URL" name="url" class="form-control form-control-lg"/>
       </div>
       {% csrf_token %}
+      <p class="h6"> Esse processo deve levar aproximadamente 1 minuto para cada 1000 publicações</p>
       <input class="btn btn-primary" type="submit" id="submit-url" value="Realizar Scraping">
     
 
@@ -204,8 +205,10 @@
                     })
                     .then(response => {
                         if (response.data.status === 'ok') {
-                            submiturl.value = "Foram encontrados "+ response.data.size + " trabalhos";
+                            submiturl.value = "Foram encontrados "+ response.data.size + " publicações";
                             const tbody = worksTable.querySelector('tbody');
+
+                            //COLOCAR EM OUTRO LUGAR, TIPO CRIAR UM DIV EMBAIXO
                         
                             // Clear existing rows in the table body
                             tbody.innerHTML = '';

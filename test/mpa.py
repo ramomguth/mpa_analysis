@@ -9,7 +9,7 @@ from collections import defaultdict
 
 
 def save_altered_similarities(main_ref, params, user_id, project_id):
-    driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+    driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
     """
     nova logica
     1 - com o id da ref a ser alterada, encontrar quem referencia ela
@@ -54,7 +54,7 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
                     break
             
             if (caso == 0):
-                print('caso0')
+                #print('caso0')
                 for ref_id in params:
                     query = "MATCH (a:trabalho{user_id:$user_id, project_id:$project_id})-[r:referencia]->(b:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) return a.id"
                     id_work_to_alter = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id)
@@ -74,7 +74,7 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
 
             '''no caso 1, todas as referencias devem apontar para a principal (que eh do tipo primaria)'''
             if (caso == 1):
-                print("caso 1")
+                #print("caso 1")
                 for ref_id in params:
                     query = "MATCH (a:trabalho{user_id:$user_id, project_id:$project_id})-[r:referencia]->(b:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) return a.id as id_to_alter"
                     result = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id).single()
@@ -92,7 +92,7 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
             
             #no caso 2 todas referencias tambem devem apontar para a referencia primaria, mesmo que o usuario tenha marcado uma secundaria como principal
             if (caso == 2):
-                print("caso 2")
+                #print("caso 2")
                 params.remove(ref_to_alter)
                 params.append(main_ref)
                 
@@ -121,7 +121,7 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
 
 def get_full_graph(user_id, project_id):
     try:
-        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
         with driver.session() as session: 
             query = "match (s:trabalho {user_id:$user_id, project_id:$project_id})-[:referencia]->(d:trabalho {user_id:$user_id, project_id:$project_id}) return s.id as source_id, s.title as source_name, d.id as target_id, d.title as target_name" 
             result = session.run(query, user_id=user_id, project_id=project_id)
@@ -210,7 +210,7 @@ def get_full_graph(user_id, project_id):
 
 def make_mpa(tipo, user_id, project_id):
     try:
-        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
         with driver.session() as session:
             query = "match (s:trabalho {user_id:$user_id, project_id:$project_id})-[:referencia]->(d:trabalho {user_id:$user_id, project_id:$project_id}) return s.id as source_id, s.title as source_name, d.id as target_id, d.title as target_name" 
             result = session.run(query, user_id=user_id, project_id=project_id)

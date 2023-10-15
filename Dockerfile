@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 EXPOSE 8000
 
 # Define environment variable for the Django secret key
-ENV DJANGO_SECRET_KEY='1234abcd'
+ENV DJANGO_SECRET_KEY='05bf9e42-b42f-4132-9de3-0a35e4151113'
 
 # Run gunicorn when the container launches
 #CMD ["gunicorn", "your_project_name.wsgi:application", "--bind", "0.0.0.0:8000"]

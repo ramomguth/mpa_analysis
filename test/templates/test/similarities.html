@@ -159,13 +159,15 @@
       </div>
       
       <h6>Modo de uso: 
-        <br> Selecione cada par de referências que sejam similares. 
-        <br> Referências que não são similares podem ser ignoradas. 
-        <br> Basta clicar em cima do par que este será selecionado.
-        <br> A refêrencia com o checkbox marcado será considerada como a principal para todas as outras.
+        <br> Selecione todos os pares de publicações/referências que sejam similares clicando em cima do par. 
+        <br> A publicação com o checkbox marcado será considerada como a principal dentre todas as selecionadas.
+        <br> Clique no botão confirmar para salvar as mudanças.
+        <br> Pares de publicações que não são similares devem ser ignoradas. 
       </h6>
       <p>
       {% csrf_token %}
+      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#meu-modal" id="confirm"> Confirmar </button>
+      
       <div class="table-responsive">
         <table class="table table-striped table-sm" id="mytable">
           <thead>
@@ -232,7 +234,6 @@
         </div>
       </div>
       
-      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#meu-modal" id="confirm"> Confirmar </button>
       <button type="button" class="btn btn-primary" style="background-color: seagreen" data-bs-toggle="modal" data-bs-target="#finish-modal" id="finalizar"> Finalizar Processo de Similaridades </button>
       
       <h6>Ao clicar em finalizar processo: 

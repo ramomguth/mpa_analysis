@@ -58,7 +58,7 @@ def scrape_sbc_event(url, user_id, project_id):
 	except requests.exceptions.RequestException as e:
 		return ("invalid_url")
 	
-	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+	driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
 	try:
 		with driver.session() as session: 
 			tx = session.begin_transaction()
@@ -168,7 +168,7 @@ similarity status:
 	complete
 '''
 def save_scraper_data(lista_trabalhos, user_id, project_id):
-	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+	driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
 	try:
 		with driver.session() as session: 
 			tx = session.begin_transaction()
@@ -219,7 +219,7 @@ def string_similarity(str1, str2):
     return result.ratio()
 
 def compare_refs(user_id, project_id):
-	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+	driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
 	try:
 		with driver.session() as session: 
 			q = f"""MATCH (t:trabalho{{user_id:'{user_id}', project_id:'{project_id}'}}) return t.title as title, t.tipo as tipo, t.id as id"""
@@ -233,6 +233,10 @@ def compare_refs(user_id, project_id):
 			todo o trabalho de similaridade, portanto e deletado os relacionamentos anteriores
 			'''
 			q = f"""MATCH ({{user_id:'{user_id}', project_id:'{project_id}'}})-[s:similar_to]->({{user_id:'{user_id}', project_id:'{project_id}'}}) DELETE s"""
+			result = session.run(q)
+
+			#update da flag
+			q= f"""MATCH (f:simil_flag {{user_id:'{user_id}', project_id:'{project_id}'}}) set f.status = 'similarity_done' """
 			result = session.run(q)
 
 	except Exception as e:
@@ -271,31 +275,24 @@ def compare_refs(user_id, project_id):
 				#print (element[1][1], element[2][1])
 				q = f"""MATCH (t:trabalho {{id:'{first_work}'}}), (r:trabalho{{id:'{second_work}'}}) CREATE (t)-[s:similar_to{{value:'{similarity}'}}]->(r) return s"""
 				result = session.run(q)
-			#update da flag
-			q= f"""MATCH (f:simil_flag {{user_id:'{user_id}', project_id:'{project_id}'}}) set f.status = 'similarity_done' """
-			result = session.run(q)
-
 	except Exception as e:
 		traceback.print_exc()
 		return(e)
 
 
 def return_simil(user_id, project_id):
-	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+	driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
 	with driver.session() as session: 
 		try:
 			q = f"""MATCH (f:simil_flag {{user_id:'{user_id}', project_id:'{project_id}'}}) return f.status"""
 			result = session.run(q).single().value()
-			
-			
 			if result == 'no_similarity_done': 
 				compare_refs(user_id, project_id)
 
-			q=f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}})-[s:similar_to]->(r:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.id as a_ref_id, t.title as a_title, r.id as b_ref, r.title as b_title, s.value as similarity order by t.title""" 
+			q=f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}})-[s:similar_to]->(r:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.id as a_ref_id, t.title as a_title, r.id as b_ref, r.title as b_title, s.value as similarity order by toLower(t.title)""" 
 			result = session.run(q)
 			ref_list=[]
 			for record in result:
-				#val1.append(record['a_ref_id'])
 				ref_list.append(record.values())  
 					
 			for index,element in enumerate(ref_list):
