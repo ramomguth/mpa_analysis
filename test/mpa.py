@@ -9,7 +9,7 @@ from collections import defaultdict
 
 
 def save_altered_similarities(main_ref, params, user_id, project_id):
-    driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+    driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
     """
     nova logica
     1 - com o id da ref a ser alterada, encontrar quem referencia ela
@@ -54,7 +54,7 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
                     break
             
             if (caso == 0):
-                print('caso0')
+                #print('caso0')
                 for ref_id in params:
                     query = "MATCH (a:trabalho{user_id:$user_id, project_id:$project_id})-[r:referencia]->(b:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) return a.id"
                     id_work_to_alter = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id)
@@ -74,7 +74,7 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
 
             '''no caso 1, todas as referencias devem apontar para a principal (que eh do tipo primaria)'''
             if (caso == 1):
-                print("caso 1")
+                #print("caso 1")
                 for ref_id in params:
                     query = "MATCH (a:trabalho{user_id:$user_id, project_id:$project_id})-[r:referencia]->(b:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) return a.id as id_to_alter"
                     result = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id).single()
@@ -92,7 +92,7 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
             
             #no caso 2 todas referencias tambem devem apontar para a referencia primaria, mesmo que o usuario tenha marcado uma secundaria como principal
             if (caso == 2):
-                print("caso 2")
+                #print("caso 2")
                 params.remove(ref_to_alter)
                 params.append(main_ref)
                 
@@ -121,7 +121,7 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
 
 def get_full_graph(user_id, project_id):
     try:
-        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
         with driver.session() as session: 
             query = "match (s:trabalho {user_id:$user_id, project_id:$project_id})-[:referencia]->(d:trabalho {user_id:$user_id, project_id:$project_id}) return s.id as source_id, s.title as source_name, d.id as target_id, d.title as target_name" 
             result = session.run(query, user_id=user_id, project_id=project_id)
@@ -210,7 +210,7 @@ def get_full_graph(user_id, project_id):
 
 def make_mpa(tipo, user_id, project_id):
     try:
-        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
+        driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
         with driver.session() as session:
             query = "match (s:trabalho {user_id:$user_id, project_id:$project_id})-[:referencia]->(d:trabalho {user_id:$user_id, project_id:$project_id}) return s.id as source_id, s.title as source_name, d.id as target_id, d.title as target_name" 
             result = session.run(query, user_id=user_id, project_id=project_id)
@@ -255,7 +255,7 @@ def make_mpa(tipo, user_id, project_id):
             if tipo == 'splc':
                 splc(g)
                 #ig.plot(g, vertex_label=l.vs["label"], target="l.svg")
-                ig.plot(g, layout="kk", edge_label=g.es["SPLC"], target="g.svg",bbox=(800, 400))
+                #ig.plot(g, layout="kk", edge_label=g.es["SPLC"], target="g.svg",bbox=(800, 400))
                 longest_path = []
                 max_length = 0
                 longest_edge_path = []
@@ -308,7 +308,7 @@ def make_mpa(tipo, user_id, project_id):
                     
             else:
                 spc(g)
-                ig.plot(g, layout="kk", edge_label=g.es["SPC"], target="g.svg")
+                #ig.plot(g, layout="kk", edge_label=g.es["SPC"], target="g.svg")
             
                 # Calculate the longest path considering 'SPC' attribute
                 longest_path = []
@@ -437,43 +437,7 @@ def spc(g):
             paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
             #print("caminhos com o escolhido = ",len(paths_with_edge))
             g.es[index]["SPC"] = len(paths_with_edge)
-        
-        ''' OLD VERSION really slow
-        edge_list = g.get_edgelist()
-        # find all simple paths between start and end vertices
-        for index,edge in enumerate(edge_list):
-            all_paths = []
-            #print("edge = ",g.vs[edge[0]]['name'],g.vs[edge[1]]['name'])
 
-            for ps in primary_sources:
-                for s in sinks:
-                    paths = g.get_all_simple_paths(ps, s, mode="out")
-                    all_paths.extend(paths)
-                #all_paths = g.get_all_simple_paths(g.vs.find(0), g.vs.find(name=end_vertex).index, mode="out")
-            
-            #print("todos caminhos", all_paths)  
-            # filter paths that include the specific edge
-            paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
-            #print("caminhos com o escolhido = ",len(paths_with_edge))
-            g.es[index]["SPC"] = len(paths_with_edge)
-
-
-            TEST VERSION
-            sinks = [v.index for v in g.vs if g.outdegree(v.index) == 0]
-            primary_sources = [v.index for v in g.vs if g.indegree(v.index) == 0]
-            
-            # Create a dictionary to store all paths from each source to each sink
-            paths_dict = {(ps, s): g.get_all_simple_paths(ps, s, mode="out") for ps in primary_sources for s in sinks}
-            
-            all_paths = [path for paths in paths_dict.values() for path in paths]
-            
-            edge_list = g.get_edgelist()
-            
-            for index, edge in enumerate(edge_list):
-                # Filter paths that include the specific edge
-                paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
-                g.es[index]["SPC"] = len(paths_with_edge)
-            '''
 
 def splc(g):
     sinks = [v.index for v in g.vs if g.outdegree(v.index) == 0]
@@ -515,37 +479,7 @@ def splc(g):
 
         # Update SPLC value
         g.es[index]["SPLC"] = len(paths_with_edge)
-   
-    '''
-    OLD VERSION , VERY SLOW DUE TO NO CACHE
-    sinks = [v.index for v in g.vs if g.outdegree(v.index) == 0]
-    primary_sources = [v.index for v in g.vs if g.indegree(v.index) == 0]
-    edge_list = g.get_edgelist()
-    
-    # find all simple paths between start and end vertices
-    for index,edge in enumerate(edge_list):
-        all_paths = []
-        current_node = edge_list[index][1]  #tem o no de destino, tipo c->e, e eh o destino
-        #print("edge = ",g.vs[edge[0]]['name'],g.vs[edge[1]]['name'])
-        predecessors = []
-        unique_pred = []
-        find_all_predecessors(g, current_node, predecessors)
-        for p in predecessors:
-            unique_pred.append(p.index) #p["name"]
-        unique_pred = list(set(unique_pred))
-
-        for elem in unique_pred:
-            for s in sinks:
-                paths = g.get_all_simple_paths(elem, s, mode="out")
-                all_paths.extend(paths)        
-            #all_paths = g.get_all_simple_paths(g.vs.find(0), g.vs.find(name=end_vertex).index, mode="out")                
-            #print("todos caminhos", all_paths)  ps-72 sink-373
-        
-        paths_with_edge = [path for path in all_paths if edge in zip(path, path[1:])]
-        #print("caminhos com o escolhido = ",len(paths_with_edge))            
-        g.es[index]["SPLC"] = len(paths_with_edge)'''
-
-
+ 
 def find_all_predecessors(g, node, predecessors):
     pred = g.vs[node].predecessors()
     if len(pred) == 0:
