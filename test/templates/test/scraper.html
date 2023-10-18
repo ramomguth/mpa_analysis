@@ -157,8 +157,10 @@
         <input type="text" id="scrape-url" placeholder="Insira a URL" name="url" class="form-control form-control-lg"/>
       </div>
       {% csrf_token %}
-      <p class="h6"> Esse processo deve levar aproximadamente 1 minuto para cada 1000 publicações</p>
+      <p class="h6"> Esse processo deve levar aproximadamente 1 minuto para cada 1000 publicações </p>
       <input class="btn btn-primary" type="submit" id="submit-url" value="Realizar Scraping">
+      <br>
+      <div class="h6" id="found-works"> </div>
     
 
       <div class="table-responsive hidden" id="table-container">
@@ -183,8 +185,6 @@
       <script>
             var submiturl = document.getElementById("submit-url");
             submiturl.addEventListener("click", function (e) {
-                document.getElementById('table-container').classList.remove('hidden');
-
                 const worksTable = document.getElementById('works-table');
                 const clear_table = worksTable.querySelector('tbody');
                 clear_table.innerHTML = '';
@@ -205,11 +205,12 @@
                     })
                     .then(response => {
                         if (response.data.status === 'ok') {
-                            submiturl.value = "Foram encontrados "+ response.data.size + " publicações";
+                            document.getElementById('table-container').classList.remove('hidden');
+                            found_works = document.getElementById('found-works');
+                            found_works.innerHTML = "Foram encontrados "+ response.data.size + " publicações";
+                            submiturl.value = "Processo Concluído! Scraper disponível novamente";
                             const tbody = worksTable.querySelector('tbody');
 
-                            //COLOCAR EM OUTRO LUGAR, TIPO CRIAR UM DIV EMBAIXO
-                        
                             // Clear existing rows in the table body
                             tbody.innerHTML = '';
                         
@@ -221,6 +222,10 @@
                                 tr.appendChild(td);
                                 tbody.appendChild(tr);
                             });
+
+                            setTimeout(function() {
+                                submiturl.value = "Realizar Scraping";
+                              }, 5000);
                         }
                         if (response.data.status === 'invalid_url') {
                             submiturl.value = "Url inválida";

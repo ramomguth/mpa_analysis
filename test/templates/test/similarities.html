@@ -77,6 +77,15 @@
         word-wrap: break-word;
         overflow-wrap: break-word;
       }
+      .hidden {
+        display: none;
+      }
+      #mytable {
+        display: block;
+        width: 20% !important;
+        max-width: 20% !important;
+    }
+    
     </style>
 
     
@@ -168,29 +177,19 @@
       {% csrf_token %}
       <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#meu-modal" id="confirm"> Confirmar </button>
       
-      <div class="table-responsive">
-        <table class="table table-striped table-sm" id="mytable">
+      <div class="table" id="table-responsive-div">
+        <table class="table table-striped"id="mytable">
           <thead>
             <tr>
-              <th scope="col">ID ref 1</th>
+              <th>ID ref 1</th>
               <th scope="col">Titulo</th>
-              <th scope="col">ID ref 2</th>
+              <th>ID ref 2</th>
               <th scope="col">Titulo</th>
-              <th scope="col">Simil</th>
+              <th scope="col">Semelhança</th>
             </tr>
           </thead>
           <tbody>
-            {% for record in refs %}
-            <tr>
-              <td >{{ record.0 }}</td>
-              <td style="text-align: center;"> {{ record.1 }} <br> <input type="checkbox" name="main-ref-checkbox" class="checkbox" data-refdata="{{ record.0 }}" data-refname="{{ record.1 }}"></td>
-              <td >{{ record.2 }}</td>
-              <td style="text-align: center;" >{{ record.3 }} <br> <input type="checkbox" name="main-ref-checkbox" class="checkbox" data-refdata="{{ record.2 }}" data-refname="{{ record.3 }}"></td>
-              <td >{{ record.4 }}</td>
-              <!--<td> <input type="checkbox" data-referenciaa="{{ record.0 }}" data-referenciab="{{ record.2 }}"  class="checkbox"> </td> -->
-            </tr>
-             
-          {% endfor %}
+           
           </tbody>
         </table>
       </div>
@@ -234,12 +233,72 @@
         </div>
       </div>
       
-      <button type="button" class="btn btn-primary" style="background-color: seagreen" data-bs-toggle="modal" data-bs-target="#finish-modal" id="finalizar"> Finalizar Processo de Similaridades </button>
-      
-      <h6>Ao clicar em finalizar processo: 
-        <br> Todos os pares de similaridades serão deletados; 
-        <br> Será possível realizar o MPA;
-      </h6>
+    <div class="hidden" id="finish-div">
+        <button type="button" class="btn btn-primary" style="background-color: seagreen" data-bs-toggle="modal" data-bs-target="#finish-modal" id="finalizar"> Finalizar Processo de Similaridades </button>
+        <h6>Ao clicar em finalizar processo: 
+            <br> Todos os pares de similaridades serão deletados; 
+            <br> Será possível realizar o MPA;
+        </h6>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let axios_data = "return_simil";
+        axios({
+            method: "post",
+            url: "{% url 'similarities' %}",
+            data: axios_data,
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => {
+                const data = response.data;
+                const tableBody = document.querySelector("#mytable tbody");
+                for (let a_ref_id in data) {
+                    let record = data[a_ref_id];
+                    let row = document.createElement("tr");
+        
+                    // ID ref 1
+                    let cell1 = document.createElement("td");
+                    cell1.textContent = a_ref_id;
+                    row.appendChild(cell1);
+        
+                    // Title 1 with checkbox
+                    let cell2 = document.createElement("td");
+                    cell2.innerHTML = `${record.a_title} <br> <input type="checkbox" name="main-ref-checkbox" class="checkbox" data-refdata="${a_ref_id}" data-refname="${record.a_title}">`;
+                    cell2.style.textAlign = "center";
+                    row.appendChild(cell2);
+        
+                    // ID ref 2
+                    let cell3 = document.createElement("td");
+                    cell3.textContent = record.b_ref;
+                    row.appendChild(cell3);
+        
+                    // Title 2 with checkbox
+                    let cell4 = document.createElement("td");
+                    cell4.innerHTML = `${record.b_title} <br> <input type="checkbox" name="main-ref-checkbox" class="checkbox" data-refdata="${record.b_ref}" data-refname="${record.b_title}">`;
+                    cell4.style.textAlign = "center";
+                    row.appendChild(cell4);
+        
+                    // Similarity
+                    let cell5 = document.createElement("td");
+                    cell5.textContent = record.similarity;
+                    row.appendChild(cell5);
+        
+                    tableBody.appendChild(row);
+                }
+                attachListeners();
+            })
+            .catch(error => {
+                console.error(error);
+            });
+
+    });
+
+
+</script>
 <script>
 	// Get the submit button
 	var confirmBtn = document.getElementById("confirm");
@@ -252,7 +311,8 @@
 	// Listen for clicks on the submit button
 	var global_selected = [];
 	let tudo = [];
-	document.addEventListener('DOMContentLoaded', function() {
+	function attachListeners() {
+        checkboxes = document.querySelectorAll(".checkbox");
 		var table = document.getElementById('mytable');
 		var rows = table.getElementsByTagName('tr');
 
@@ -280,7 +340,11 @@
 			//console.log(rowData);
 			tudo = rowData;
 		});
-	});
+
+        //table.classList.remove('hidden');
+        document.getElementById('finish-div').classList.remove('hidden');
+        document.getElementById('table-responsive-div').classList.remove('hidden');
+	}
 
 	const ref_checkboxes = document.querySelectorAll('input[name="main-ref-checkbox"]');
 		ref_checkboxes.forEach((checkbox) => {
@@ -333,7 +397,7 @@
 		console.log(my_data);
 		axios({
 			method: "post",
-			url: "/save_similarities",
+			url: "{% url 'save_similarities' %}",
 			data: my_data,
 			headers: { 
 				'Content-Type': 'application/json',
@@ -351,7 +415,7 @@
 		.catch(error => {
 			console.error(error);
 		});
-});
+    });
 
     let finish_button = document.getElementById("modal-finish-save");
     let finish_flag = 1;
@@ -360,7 +424,7 @@
 	finish_button.addEventListener('click', function() {
     axios({
         method: "post",
-        url: "/finish_similarities",
+        url: "{% url 'finish_similarities' %}",
         data: finish_flag,
         headers: { 
             'Content-Type': 'application/json',
@@ -377,25 +441,7 @@
         .catch(error => {
             console.error(error);
         });
-    });
-    
-	/*
-	pra usar ajax fica res = json.loads(request.POST.get('my_data')) no back
-	$.ajax({
-		type: "POST",
-		url: "/backend_test",
-		data: {my_data: JSON.stringify(my_data)},
-		success: function(response) {
-			// handle the response from the server
-			console.log(my_data);
-			alert(response);
-			//reload windows
-		}
-	});
-
-	*/        
-
-	
+    });	
 </script>
      
     </main>

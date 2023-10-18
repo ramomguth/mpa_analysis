@@ -58,7 +58,7 @@ def scrape_sbc_event(url, user_id, project_id):
 	except requests.exceptions.RequestException as e:
 		return ("invalid_url")
 	
-	driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
+	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	try:
 		with driver.session() as session: 
 			tx = session.begin_transaction()
@@ -168,7 +168,7 @@ similarity status:
 	complete
 '''
 def save_scraper_data(lista_trabalhos, user_id, project_id):
-	driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
+	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	try:
 		with driver.session() as session: 
 			tx = session.begin_transaction()
@@ -219,7 +219,7 @@ def string_similarity(str1, str2):
     return result.ratio()
 
 def compare_refs(user_id, project_id):
-	driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
+	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	try:
 		with driver.session() as session: 
 			q = f"""MATCH (t:trabalho{{user_id:'{user_id}', project_id:'{project_id}'}}) return t.title as title, t.tipo as tipo, t.id as id"""
@@ -281,7 +281,7 @@ def compare_refs(user_id, project_id):
 
 
 def return_simil(user_id, project_id):
-	driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
+	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	with driver.session() as session: 
 		try:
 			q = f"""MATCH (f:simil_flag {{user_id:'{user_id}', project_id:'{project_id}'}}) return f.status"""
@@ -292,14 +292,23 @@ def return_simil(user_id, project_id):
 			q=f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}})-[s:similar_to]->(r:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.id as a_ref_id, t.title as a_title, r.id as b_ref, r.title as b_title, s.value as similarity order by toLower(t.title)""" 
 			result = session.run(q)
 			ref_list=[]
+			ref_dict={}
 			for record in result:
-				ref_list.append(record.values())  
+				#ref_list.append(record.values())  
+				a_ref_id = record['a_ref_id']
+				data = {
+					'a_title': record['a_title'],
+					'b_ref': record['b_ref'],
+					'b_title': record['b_title'],
+					'similarity': round(float(record['similarity']), 3)
+				}
+				ref_dict[a_ref_id] = data
 					
-			for index,element in enumerate(ref_list):
-				simil = round(float(element[4]),3)
-				ref_list[index][4] = simil
+			#for index,element in enumerate(ref_list):
+			#	simil = round(float(element[4]),3)
+			#	ref_list[index][4] = simil
 			
-			return ref_list
+			return ref_dict
 		except Exception as e:
 			traceback.print_exc()
 			ref_list = []
