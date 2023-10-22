@@ -55,23 +55,31 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
             
             if (caso == 0):
                 #print('caso0')
+                full_list = []
+                #1 Buscar todos os trabalhos principais que citam as referencias selecionadas pelo usuario
                 for ref_id in params:
-                    query = "MATCH (a:trabalho{user_id:$user_id, project_id:$project_id})-[r:referencia]->(b:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) return a.id"
-                    id_work_to_alter = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id)
-                    id_work_to_alter = id_work_to_alter.single().value()
-                    #print("para alterar", id_work_to_alter)
+                    query = "MATCH (a:trabalho{user_id:$user_id, project_id:$project_id})-[r:referencia]-(b:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) return a.id"
+                    ids = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id)
+                    # podem existir dois ou mais trabalhos que ja citam a referencia, é o caso tratado anteriormente de referencias com exatamente o mesmo título
+                    for record in ids:
+                        full_list.append(record.value())
 
-                    #3 deletar a ref antiga propriamente com seus relacionamentos
+                    #2 deletar as ref antiga propriamente com seus relacionamentos
                     query = "MATCH (t:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) detach delete t"
                     result1 = tx.run(query, ref_id=ref_id, user_id=user_id, project_id=project_id)
                     #print("deletado", ref_id)
 
-                    #4 criar o novo relacionamento de referencia
-                    query = "MATCH (t:trabalho{id:$id_work_to_alter, user_id:$user_id, project_id:$project_id}), (r:trabalho{id:$main_ref, user_id:$user_id, project_id:$project_id}) CREATE (t)-[:referencia]->(r)"
-                    result2 = tx.run(query, id_work_to_alter=id_work_to_alter, main_ref=main_ref, user_id=user_id, project_id=project_id)
-                    #print(id_work_to_alter, "referencia", main_ref)
-                    
+                unique_refs = list(set(full_list))
+                print("main = ",main_ref)
+                print("unique= ",unique_refs)
+                print("param= ",params)
 
+                #3 criar o novo relacionamento de referencia
+                for principal in unique_refs:
+                    query = "MATCH (t:trabalho{id:$id_work_to_alter, user_id:$user_id, project_id:$project_id}), (r:trabalho{id:$main_ref, user_id:$user_id, project_id:$project_id}) CREATE (t)-[:referencia]->(r)"
+                    result2 = tx.run(query, id_work_to_alter=principal, main_ref=main_ref, user_id=user_id, project_id=project_id)
+                    #print(principal, "referencia", main_ref)
+                    
             '''no caso 1, todas as referencias devem apontar para a principal (que eh do tipo primaria)'''
             if (caso == 1):
                 #print("caso 1")

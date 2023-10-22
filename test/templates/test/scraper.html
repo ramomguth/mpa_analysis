@@ -160,11 +160,14 @@
             </div>
     
           </div>     
-    <p class="h6"> Insira abaixo a URL do evento SBC para a coleta das publicações:</p>
-      <p class="h6"> Exemplo: https://sol.sbc.org.br/index.php/wit/issue/view/509</p>
-      <p class="h6"> É obrigatório que o link seja do padrão acima, de um evento e ano específicos, onde são listadas todas as publicações:</p>
-      <p class="h6"> Esse processo deve levar aproximadamente 1 minuto para cada 1000 publicações e suas respectivas referências.</p>
-      <p class="h6"> É possível repetir esse processo múltiplas vezes.</p>
+     
+        <p class="h6"> Insira abaixo a URL do evento SBC para a coleta das publicações:</p>
+        <p class="h6"> Exemplo: https://sol.sbc.org.br/index.php/wit/issue/view/509</p>
+         <!--
+        <p class="h6"> É obrigatório que o link seja do padrão acima, de um evento e ano específicos, onde são listadas todas as publicações:</p>
+        <p class="h6"> Esse processo deve levar aproximadamente 1 minuto para cada 1000 publicações e suas respectivas referências.</p>
+        <p class="h6"> É possível repetir esse processo múltiplas vezes.</p>
+      -->
       
       <div class="form-outline mb-2">
         <input type="text" id="scrape-url" placeholder="Insira a URL do evento" name="url" class="form-control"/>
@@ -261,9 +264,11 @@
                         }
                         if (response.data.status === 'invalid_url') {
                             submiturl.value = "Url inválida";
+                            submiturl.disabled = false;
                         }
                         if (response.data.status === 'url_already_used') {
                             submiturl.value = "Url já foi incluída no projeto";
+                            submiturl.disabled = false;
                         }
                     })
                     .catch(error => {
