@@ -179,7 +179,7 @@ def get_full_graph(user_id, project_id):
 
             indegree_list = [max_indegree_vertex_id, "Indegree = " + str(max(in_degrees)), max_indegree_vertex_name]
             outdegree_list = [max_outdegree_vertex_id, "Outdegree = " + str(max(out_degrees)), max_outdegree_vertex_name]
-            total_degree_list = [max_total_degree_vertex_id,"Total Degree = " + str(max(total_degrees)), max_total_degree_vertex_name]
+            total_degree_list = [max_total_degree_vertex_id,"Degree = " + str(max(total_degrees)), max_total_degree_vertex_name]
             
             nodes = [{"data": {
                             "id": v.index, 

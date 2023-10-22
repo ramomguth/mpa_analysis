@@ -1,4 +1,5 @@
 import difflib as dl
+import textdistance as td
 import re
 import time
 import uuid
@@ -215,8 +216,9 @@ def save_scraper_data(lista_trabalhos, user_id, project_id):
 		return(e)
 	
 def string_similarity(str1, str2):
-    result =  dl.SequenceMatcher(a=str1.lower(), b=str2.lower())
-    return result.ratio()
+    #result =  dl.SequenceMatcher(a=str1.lower(), b=str2.lower())
+	s = td.damerau_levenshtein.normalized_similarity(str1.lower(), str2.lower())
+	return s
 
 def compare_refs(user_id, project_id):
 	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
@@ -243,19 +245,39 @@ def compare_refs(user_id, project_id):
 		traceback.print_exc()
 		return(e)
 	
+
+	
+	visited_titles = set()  # To keep track of titles we've already processed
+	
+
+
 	simil = []
 	strings_dict = {}
 
-	st = time.time()
 	for lst in lista_trabalhos:
-		strings_dict[lst[0]] = {'tipo': lst[1]}
+		#strings_dict[lst[0]] = {'tipo': lst[1]}
 		strings_dict[lst[0]] = (lst[1], lst[2])
 		#salva as informacoes pertinentes a cada referencia
+
+	s1 = "Maciel, C. and Bim, S. A. (2016). Programa meninas digitais - ações para divulgar a computação para meninas do ensino médio. In Anais do Computer on the Beach. Sociedade Brasileira de Computação. Disponível em http://www.computeronthebeach.com.br/arquivos-2016/Anais completos - Computer on the Beach 2016.pdf."
+	s2 = "Maciel, C., Bim, S. A. (2016) “Programa Meninas Digitais - ações para divulgar a Computação para meninas do ensino médio”. In: Computer on the Beach 2016, Florianópolis, SC. pp. 327-336."
+	s3 = "Maciel, C., Bim, S. A. Programa Meninas Digitais ações para divulgar a Computação para meninas do ensino médio. In: Computer on the Beach, 2016, Florianópolis. Anais [do] Computer on the Beach, 2016. p. 327336."
+	s4 = "Maciel, C., Bim, S. A. (2016) “Programa Meninas Digitais - ações para divulgar a Computação para meninas do ensino médio”, In: Computer on the Beach 2016, Florianópolis, SC, p. 327-336."
 	
+	
+	
+
+	lista_trabalhos2 = []
+	for trab in lista_trabalhos:
+		lista_trabalhos2.append(trab[0])
+	po=0
+	st = time.time()
+
+				
 	for str1, str2 in combinations(strings_dict.keys(), 2):
 		similarity = (string_similarity(str1,str2))
 		similarity = round(similarity,3)
-		if similarity > 0.65:
+		if similarity > 0.45:
 			if (strings_dict[str1][0] == 'primario' and strings_dict[str2][0] == 'primario'): continue
 			#print(similarity, str1,"|||", str2)
 			#print(f"Add info for str1: {strings_dict[str1]}")
@@ -263,8 +285,9 @@ def compare_refs(user_id, project_id):
 			tup = (similarity, strings_dict[str1], strings_dict[str2])
 			simil.append(tup)
 	et = time.time()
-	#print ("time = ", et - st)
-
+	print ("time = ", et - st)
+	#print(len(simil))
+	#print(po)
 	try:
 		#salva as similaridades
 		with driver.session() as session: 
@@ -286,8 +309,8 @@ def return_simil(user_id, project_id):
 		try:
 			q = f"""MATCH (f:simil_flag {{user_id:'{user_id}', project_id:'{project_id}'}}) return f.status"""
 			result = session.run(q).single().value()
-			if result == 'no_similarity_done': 
-				compare_refs(user_id, project_id)
+			#if result == 'no_similarity_done': 
+			compare_refs(user_id, project_id)
 
 			q=f"""MATCH (t:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}})-[s:similar_to]->(r:trabalho {{user_id:'{user_id}', project_id:'{project_id}'}}) return t.id as a_ref_id, t.title as a_title, r.id as b_ref, r.title as b_title, s.value as similarity order by toLower(t.title)""" 
 			result = session.run(q)

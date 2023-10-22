@@ -72,6 +72,10 @@
       .hidden {
         display: none;
       }
+      .size-24{
+        width: 24px !important;
+        height: 24px !important;
+    }
     </style>
 
     
@@ -133,33 +137,44 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'mpa' %}">
-              <span data-feather="bar-chart" class="align-text-bottom"></span>
-              3. Main Path Analysis
+            <a class="nav-link" href="{% url 'infos' %}">
+              <span data-feather="book-open" class="align-text-bottom"></span>
+              3. Rede de citação completa
             </a>
           </li>
           <li class="nav-item">
-              <a class="nav-link" href="{% url 'infos' %}">
-                <span data-feather="book-open" class="align-text-bottom"></span>
-                4. Gráfico Completo
-              </a>
-            </li>
+            <a class="nav-link" href="{% url 'mpa' %}">
+              <span data-feather="bar-chart" class="align-text-bottom"></span>
+              4. Main Path Analysis
+            </a>
+          </li>
         </ul>
       </div>
     </nav>
 
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-
-      <p class="h6"> Insira abaixo a URL do evento SBC para a coleta das publicações:</p>
+        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+            <h4>Coleta de referências via web scraping</h4> 
+            <div class="h6" id="tutorial-div" data-bs-toggle="modal" data-bs-target="#tutorial-modal" style="cursor: pointer;"> 
+              Tutorial  <i class="size-24" data-feather="help-circle"></i> 
+            </div>
+    
+          </div>     
+    <p class="h6"> Insira abaixo a URL do evento SBC para a coleta das publicações:</p>
       <p class="h6"> Exemplo: https://sol.sbc.org.br/index.php/wit/issue/view/509</p>
-
-      <div class="form-outline mb-4">
-        <input type="text" id="scrape-url" placeholder="Insira a URL" name="url" class="form-control form-control-lg"/>
+      <p class="h6"> É obrigatório que o link seja do padrão acima, de um evento e ano específicos, onde são listadas todas as publicações:</p>
+      <p class="h6"> Esse processo deve levar aproximadamente 1 minuto para cada 1000 publicações e suas respectivas referências.</p>
+      <p class="h6"> É possível repetir esse processo múltiplas vezes.</p>
+      
+      <div class="form-outline mb-2">
+        <input type="text" id="scrape-url" placeholder="Insira a URL do evento" name="url" class="form-control"/>
       </div>
       {% csrf_token %}
-      <p class="h6"> Esse processo deve levar aproximadamente 1 minuto para cada 1000 publicações </p>
+      
       <input class="btn btn-primary" type="submit" id="submit-url" value="Realizar Scraping">
       <br>
+
+      <div class="h6" id="scraper-status"> </div>
       <div class="h6" id="found-works"> </div>
     
 
@@ -167,8 +182,7 @@
         <table class="table table-striped table-sm" id="works-table">
           <thead>
             <tr>
-              <th scope="col">Nome</th>
-             
+              <th scope="col">Título</th>
             </tr>
           </thead>
           <tbody>
@@ -181,14 +195,31 @@
         </table>
       </div>
       
+      <div class="modal" id="tutorial-modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-body">
+                <p class="h6"> É obrigatório que o link seja do padrão acima, de um evento e ano específicos, onde são listadas todas as publicações:</p>
+                <p class="h6"> Esse processo deve levar aproximadamente 1 minuto para cada 1000 publicações e suas respectivas referências.</p>
+                <p class="h6"> Também é possível repetir esse processo múltiplas vezes.</p>          
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+          </div>
+        </div>
+      </div>
       
       <script>
             var submiturl = document.getElementById("submit-url");
+            let scraper_status = document.getElementById('scraper-status');
             submiturl.addEventListener("click", function (e) {
+                this.disabled = true;
                 const worksTable = document.getElementById('works-table');
                 const clear_table = worksTable.querySelector('tbody');
                 clear_table.innerHTML = '';
                 submiturl.value = "Em processamento, por favor aguarde";
+                //scraper_status.innerHTML = "Em processamento, por favor aguarde";
                 let event_url = document.getElementById("scrape-url").value;
                 const csrfToken = document.getElementsByName("csrfmiddlewaretoken")[0].value;
             
@@ -207,8 +238,8 @@
                         if (response.data.status === 'ok') {
                             document.getElementById('table-container').classList.remove('hidden');
                             found_works = document.getElementById('found-works');
-                            found_works.innerHTML = "Foram encontrados "+ response.data.size + " publicações";
-                            submiturl.value = "Processo Concluído! Scraper disponível novamente";
+                            found_works.innerHTML = "Foram encontradas "+ response.data.size + " publicações e suas respectivas referências";
+            
                             const tbody = worksTable.querySelector('tbody');
 
                             // Clear existing rows in the table body
@@ -225,7 +256,8 @@
 
                             setTimeout(function() {
                                 submiturl.value = "Realizar Scraping";
-                              }, 5000);
+                                submiturl.disabled = false;
+                              }, 3000);
                         }
                         if (response.data.status === 'invalid_url') {
                             submiturl.value = "Url inválida";
