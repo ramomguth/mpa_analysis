@@ -70,9 +70,6 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
                     #print("deletado", ref_id)
 
                 unique_refs = list(set(full_list))
-                print("main = ",main_ref)
-                print("unique= ",unique_refs)
-                print("param= ",params)
 
                 #3 criar o novo relacionamento de referencia
                 for principal in unique_refs:

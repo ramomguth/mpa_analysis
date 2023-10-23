@@ -261,35 +261,26 @@ def compare_refs(user_id, project_id):
 	duplicates = [values for key, values in title_dict.items() if len(values) > 1]
 
 	simil = []
-	print("fuck")
 	with driver.session() as session: 
 		for entry in duplicates:
 			main_ref = entry[0][2]
-			print(entry[0])
 			for i in range(1, len(entry)):
 				to_alter = entry[i][2]
-				'''
-				query = """MATCH (t:trabalho{id:$id_work_to_alter, user_id:$user_id, project_id:$project_id}), (r:trabalho{id:$main_ref, user_id:$user_id, project_id:$project_id}) CREATE (t)-[s:similar_to{value:1}]->(r) return s"""
-				print(query)
-				result2 = session.run(query, id_work_to_alter=to_alter, main_ref=main_ref, similarity=1, user_id=user_id, project_id=project_id)
-				print(to_alter, "similar_to", main_ref)
-				'''
-				#tup = (1, entry[0][0], entry[i][0])
-				#simil.append(tup)
+				
 				query = "MATCH (a:trabalho{user_id:$user_id, project_id:$project_id})-[r:referencia]->(b:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) return a.id"
 				id_work_to_alter = session.run(query, ref_id=to_alter, user_id=user_id, project_id=project_id)
 				id_work_to_alter = id_work_to_alter.single().value()
-				print("para alterar", id_work_to_alter)
+				#print("para alterar", id_work_to_alter)
 
 				#3 deletar a ref antiga propriamente com seus relacionamentos
 				query = "MATCH (t:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) detach delete t"
 				result1 = session.run(query, ref_id=to_alter, user_id=user_id, project_id=project_id)
-				print("deletado", to_alter)
+				#print("deletado", to_alter)
 
 				#4 criar o novo relacionamento de referencia
 				query = "MATCH (t:trabalho{id:$id_work_to_alter, user_id:$user_id, project_id:$project_id}), (r:trabalho{id:$main_ref, user_id:$user_id, project_id:$project_id}) CREATE (t)-[:referencia]->(r)"
 				result2 = session.run(query, id_work_to_alter=id_work_to_alter, main_ref=main_ref, user_id=user_id, project_id=project_id)
-				print(id_work_to_alter, "referencia", main_ref)
+				#print(id_work_to_alter, "referencia", main_ref)
 
 		
 		q = f"""MATCH (t:trabalho{{user_id:'{user_id}', project_id:'{project_id}'}}) return t.title as title, t.tipo as tipo, t.id as id"""
@@ -300,18 +291,10 @@ def compare_refs(user_id, project_id):
 
 	
 	strings_dict = {}
-	print("out")
 	for lst in lista_trabalhos:
 		#strings_dict[lst[0]] = {'tipo': lst[1]}
 		strings_dict[lst[0]] = (lst[1], lst[2])
 		#salva as informacoes pertinentes a cada referencia
-
-	s1 = "Maciel, C. and Bim, S. A. (2016). Programa meninas digitais - ações para divulgar a computação para meninas do ensino médio. In Anais do Computer on the Beach. Sociedade Brasileira de Computação. Disponível em http://www.computeronthebeach.com.br/arquivos-2016/Anais completos - Computer on the Beach 2016.pdf."
-	s2 = "Maciel, C., Bim, S. A. (2016) “Programa Meninas Digitais - ações para divulgar a Computação para meninas do ensino médio”. In: Computer on the Beach 2016, Florianópolis, SC. pp. 327-336."
-	s3 = "Maciel, C., Bim, S. A. Programa Meninas Digitais ações para divulgar a Computação para meninas do ensino médio. In: Computer on the Beach, 2016, Florianópolis. Anais [do] Computer on the Beach, 2016. p. 327336."
-	s4 = "Maciel, C., Bim, S. A. (2016) “Programa Meninas Digitais - ações para divulgar a Computação para meninas do ensino médio”, In: Computer on the Beach 2016, Florianópolis, SC, p. 327-336."
-
-	print(string_similarity(s1, s2))
 
 	st = time.time()		
 	for str1, str2 in combinations(strings_dict.keys(), 2):
@@ -325,9 +308,7 @@ def compare_refs(user_id, project_id):
 			tup = (similarity, strings_dict[str1], strings_dict[str2])
 			simil.append(tup)
 	et = time.time()
-	print ("time = ", et - st)
-	#print(len(simil))
-	#print(po)
+	#print ("time = ", et - st)
 	try:
 		#salva as similaridades
 		with driver.session() as session: 
