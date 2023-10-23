@@ -1,10 +1,12 @@
 import difflib as dl
+import textdistance as td
 import re
 import time
 import uuid
 from dataclasses import dataclass
 import traceback
 from itertools import combinations
+from collections import defaultdict
 #import itertools
 #import pandas as pd
 #import numpy as np
@@ -215,23 +217,28 @@ def save_scraper_data(lista_trabalhos, user_id, project_id):
 		return(e)
 	
 def string_similarity(str1, str2):
-    result =  dl.SequenceMatcher(a=str1.lower(), b=str2.lower())
-    return result.ratio()
+    #result =  dl.SequenceMatcher(a=str1.lower(), b=str2.lower())
+	s = td.damerau_levenshtein.normalized_similarity(str1.lower(), str2.lower())
+	return s
 
 def compare_refs(user_id, project_id):
 	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	try:
 		with driver.session() as session: 
-			q = f"""MATCH (t:trabalho{{user_id:'{user_id}', project_id:'{project_id}'}}) return t.title as title, t.tipo as tipo, t.id as id"""
-			result = session.run(q)
-			lista_trabalhos = []
-			for record in result:
-				lista_trabalhos.append(record.values())
-
 			'''
 			caso o usuario inclua um novo evento na base, eh necessario recomecar
 			todo o trabalho de similaridade, portanto e deletado os relacionamentos anteriores
 			'''
+			q = f"""MATCH (t:trabalho{{user_id:'{user_id}', project_id:'{project_id}'}}) 
+					WITH t.title AS title, COLLECT(t) AS nodes 
+					WHERE SIZE(nodes) > 1 
+					UNWIND nodes AS node
+					RETURN node.title AS title, node.tipo AS tipo, node.id AS id;"""
+			result = session.run(q)
+			repeated_titles = []
+			for record in result:
+				repeated_titles.append(record.values())
+
 			q = f"""MATCH ({{user_id:'{user_id}', project_id:'{project_id}'}})-[s:similar_to]->({{user_id:'{user_id}', project_id:'{project_id}'}}) DELETE s"""
 			result = session.run(q)
 
@@ -243,19 +250,57 @@ def compare_refs(user_id, project_id):
 		traceback.print_exc()
 		return(e)
 	
-	simil = []
-	strings_dict = {}
+	title_dict = defaultdict(list)
+	for item in repeated_titles:		#cria um dicionario com os trabalhos que tem o mesmo titulo
+		title, tipo, id = item
+		title_dict[title].append((title, tipo, id))
 
-	st = time.time()
+	# Get the values where there are duplicates
+	#todo esse processo é necessário pois o processo de combinações não trata os casos onde 2 publicações tem exatamente o mesmo titulo,
+	#pois tem o mesmo titulo mas ids diferentes
+	duplicates = [values for key, values in title_dict.items() if len(values) > 1]
+
+	simil = []
+	with driver.session() as session: 
+		for entry in duplicates:
+			main_ref = entry[0][2]
+			for i in range(1, len(entry)):
+				to_alter = entry[i][2]
+				
+				query = "MATCH (a:trabalho{user_id:$user_id, project_id:$project_id})-[r:referencia]->(b:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) return a.id"
+				id_work_to_alter = session.run(query, ref_id=to_alter, user_id=user_id, project_id=project_id)
+				id_work_to_alter = id_work_to_alter.single().value()
+				#print("para alterar", id_work_to_alter)
+
+				#3 deletar a ref antiga propriamente com seus relacionamentos
+				query = "MATCH (t:trabalho{id:$ref_id, user_id:$user_id, project_id:$project_id}) detach delete t"
+				result1 = session.run(query, ref_id=to_alter, user_id=user_id, project_id=project_id)
+				#print("deletado", to_alter)
+
+				#4 criar o novo relacionamento de referencia
+				query = "MATCH (t:trabalho{id:$id_work_to_alter, user_id:$user_id, project_id:$project_id}), (r:trabalho{id:$main_ref, user_id:$user_id, project_id:$project_id}) CREATE (t)-[:referencia]->(r)"
+				result2 = session.run(query, id_work_to_alter=id_work_to_alter, main_ref=main_ref, user_id=user_id, project_id=project_id)
+				#print(id_work_to_alter, "referencia", main_ref)
+
+		
+		q = f"""MATCH (t:trabalho{{user_id:'{user_id}', project_id:'{project_id}'}}) return t.title as title, t.tipo as tipo, t.id as id"""
+		result = session.run(q)
+		lista_trabalhos = []
+		for record in result:
+			lista_trabalhos.append(record.values())
+
+	
+	strings_dict = {}
 	for lst in lista_trabalhos:
-		strings_dict[lst[0]] = {'tipo': lst[1]}
+		#strings_dict[lst[0]] = {'tipo': lst[1]}
 		strings_dict[lst[0]] = (lst[1], lst[2])
 		#salva as informacoes pertinentes a cada referencia
-	
+
+	st = time.time()		
 	for str1, str2 in combinations(strings_dict.keys(), 2):
 		similarity = (string_similarity(str1,str2))
 		similarity = round(similarity,3)
-		if similarity > 0.65:
+		if similarity > 0.45:
 			if (strings_dict[str1][0] == 'primario' and strings_dict[str2][0] == 'primario'): continue
 			#print(similarity, str1,"|||", str2)
 			#print(f"Add info for str1: {strings_dict[str1]}")
@@ -264,7 +309,6 @@ def compare_refs(user_id, project_id):
 			simil.append(tup)
 	et = time.time()
 	#print ("time = ", et - st)
-
 	try:
 		#salva as similaridades
 		with driver.session() as session: 

@@ -70,21 +70,24 @@
         -webkit-overflow-scrolling: touch;
       }
       .selected {
-        background-color: lightblue; /* Change the background color to your desired selection color */
+        background-color: lightblue !important; 
       }
       .break-word {
-        white-spece: normal;
+        white-space: normal;
         word-wrap: break-word;
         overflow-wrap: break-word;
       }
       .hidden {
         display: none;
       }
-      #mytable {
-        display: block;
-        width: 20% !important;
-        max-width: 20% !important;
-    }
+      
+    #mytable td, #mytable th {
+      word-break: break-word; /* Break the content to next line */
+      overflow: hidden;
+      min-width: 100px !important;
+      text-overflow: ellipsis; /* Display ... when the text is too long */
+  }
+    
     
     </style>
 
@@ -147,43 +150,54 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'mpa' %}">
-              <span data-feather="bar-chart" class="align-text-bottom"></span>
-              3. Main Path Analysis
+            <a class="nav-link" href="{% url 'infos' %}">
+              <span data-feather="book-open" class="align-text-bottom"></span>
+              3. Rede de citação completa
             </a>
           </li>
           <li class="nav-item">
-              <a class="nav-link" href="{% url 'infos' %}">
-                <span data-feather="book-open" class="align-text-bottom"></span>
-                4. Gráfico Completo
-              </a>
-            </li>
+            <a class="nav-link" href="{% url 'mpa' %}">
+              <span data-feather="bar-chart" class="align-text-bottom"></span>
+              4. Main Path Analysis
+            </a>
+          </li>
         </ul>
       </div>
     </nav>
 
     <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h4>Tabela de referências similares</h4> 
+        <h6>Tabela de referências similares</h6> 
+        <div class="h6" id="tutorial-div" data-bs-toggle="modal" data-bs-target="#tutorial-modal" style="cursor: pointer;"> 
+          Tutorial  <i class="size-24" data-feather="help-circle"></i> 
+        </div>
+
       </div>
       
-      <h6>Modo de uso: 
-        <br> Selecione todos os pares de publicações/referências que sejam similares clicando em cima do par. 
-        <br> A publicação com o checkbox marcado será considerada como a principal dentre todas as selecionadas.
-        <br> Clique no botão confirmar para salvar as mudanças.
-        <br> Pares de publicações que não são similares devem ser ignoradas. 
+      <h6>
+         Ao executar o processo de similaridades pela primeira vez, a página pode levar alguns minutos para carregar.
+        <br>
+        <br>
       </h6>
+      <!--
+         <h6>Modo de uso: 
+        <br> 1 - Selecione todos os pares de publicações/referências que sejam similares clicando em cima do par. 
+        <br> 2 - A cada par ou conjunto de pares selecionados, clique no botão confirmar para salvar as mudanças.
+        <br>
+        <br> * A publicação com o checkbox marcado será considerada como a principal dentre todas as selecionadas. Pares de publicações que não são similares devem ser ignoradas. 
+      </h6>-->
+
       <p>
       {% csrf_token %}
-      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#meu-modal" id="confirm"> Confirmar </button>
+      <button type="button" class="btn btn-primary hidden" data-bs-toggle="modal" data-bs-target="#meu-modal" id="confirm"> Confirmar </button>
       
-      <div class="table" id="table-responsive-div">
-        <table class="table table-striped"id="mytable">
+      <div class="table table-responsive" id="table-responsive-div">
+        <table class="table table-striped hidden"id="mytable">
           <thead>
             <tr>
-              <th>ID ref 1</th>
+              <th scope="col">ID ref 1</th>
               <th scope="col">Titulo</th>
-              <th>ID ref 2</th>
+              <th scope="col">ID ref 2</th>
               <th scope="col">Titulo</th>
               <th scope="col">Semelhança</th>
             </tr>
@@ -207,7 +221,7 @@
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-body">
-              <h4>Utilizar a seguinte referencia como principal para todas as selecionadas?</h4>
+              <h6>Utilizar a seguinte publicação como principal para todas as selecionadas?</h4>
               <p id="primary-ref-text" class="w-100" style="line-break: anywhere;"> </p>         
             </div>
             <div class="modal-footer">
@@ -221,9 +235,9 @@
       <div class="modal" id="finish-modal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
-            <div class="modal-body">
-              <h4>Finalizar o processo de similaridades?</h4>
-              <h4>Essa ação é irreversível!</h4>    
+            <div class="modal-body" style="text-align: center;">
+              <h6>Finalizar o processo de similaridades?</h4>
+              <h6>Essa ação é irreversível!</h4>    
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
@@ -239,6 +253,24 @@
             <br> Todos os pares de similaridades serão deletados; 
             <br> Será possível realizar o MPA;
         </h6>
+    </div>
+
+    <div class="modal" id="tutorial-modal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-body">
+            <h6>Modo de uso: 
+              <br> 1 - Selecione todos os pares de publicações/referências que sejam similares clicando em cima do par. 
+              <br> 2 - A cada par ou conjunto de pares selecionados, clique no botão confirmar para salvar as mudanças.
+              <br>
+              <br> * A publicação com o checkbox marcado será considerada como a principal dentre todas as selecionadas. Pares de publicações que não são similares devem ser ignoradas. 
+            </h6>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+          </div>
+        </div>
+      </div>
     </div>
 
 <script>
@@ -309,44 +341,23 @@
 	var selectedContent = document.getElementById("modal-select-options");
     let selectedContent2 = document.getElementById("primary-ref-text");
 	// Listen for clicks on the submit button
+    var table = document.getElementById('mytable');
 	var global_selected = [];
 	let tudo = [];
 	function attachListeners() {
         checkboxes = document.querySelectorAll(".checkbox");
-		var table = document.getElementById('mytable');
-		var rows = table.getElementsByTagName('tr');
 
+		var rows = table.getElementsByTagName('tr');
 		for (var i = 0; i < rows.length; i++) {
-			rows[i].addEventListener('click', function() {
-			this.classList.toggle('selected');
-			});
+			rows[i].addEventListener('click', function(event) {
+                // If the clicked element is not a checkbox, toggle the selected state
+                if (event.target.type !== 'checkbox') {
+                    this.classList.toggle('selected');
+                }
+            });
 		}
 
-		var submitBtn = document.getElementById('confirm');
-		submitBtn.addEventListener('click', function() {
-			var selectedRows = table.getElementsByClassName('selected');
-			var rowData = [];
-
-			for (var i = 0; i < selectedRows.length; i++) {
-				var cells = selectedRows[i].getElementsByTagName('td');
-				var rowValues = [];
-
-				for (var j = 0; j < cells.length; j++) {
-					rowValues.push(cells[j].innerText);
-				}
-				rowData.push(rowValues);
-			}
-			
-			//console.log(rowData);
-			tudo = rowData;
-		});
-
-        //table.classList.remove('hidden');
-        document.getElementById('finish-div').classList.remove('hidden');
-        document.getElementById('table-responsive-div').classList.remove('hidden');
-	}
-
-	const ref_checkboxes = document.querySelectorAll('input[name="main-ref-checkbox"]');
+        const ref_checkboxes = document.querySelectorAll('input[name="main-ref-checkbox"]');
 		ref_checkboxes.forEach((checkbox) => {
 			checkbox.addEventListener('click', () => {
 				ref_checkboxes.forEach((c) => {
@@ -356,6 +367,29 @@
 				});
 			});
 		});
+
+        table.classList.remove('hidden');
+        document.getElementById('finish-div').classList.remove('hidden');
+        //document.getElementById('table-responsive-div').classList.remove('hidden');
+        confirmBtn.classList.remove('hidden');
+	}
+
+    var submitBtn = document.getElementById('confirm');
+		submitBtn.addEventListener('click', function() {
+			var selectedRows = table.getElementsByClassName('selected');
+			var rowData = [];
+
+			for (var i = 0; i < selectedRows.length; i++) {
+				var cells = selectedRows[i].getElementsByTagName('td');
+				var rowValues = [];
+				for (var j = 0; j < cells.length; j++) {
+					rowValues.push(cells[j].innerText);
+				}
+				rowData.push(rowValues);
+			}
+			tudo = rowData;
+		});
+	
 
 	confirmBtn.addEventListener("click", function() {
 		// Get the selected content
@@ -375,7 +409,7 @@
 		// Display the selected content in the modal
 		//selectedContent.innerHTML = modal_html_select;
         //selectedContent2.innerHTML = modal_html_select;
-        console.log("modal_html_select",modal_html_select)
+        //console.log("modal_html_select",modal_html_select)
         selectedContent2.innerHTML = modal_html_select;
 
 		global_selected = selected;
@@ -394,7 +428,6 @@
 		
 
 		my_data = JSON.stringify(my_data);
-		console.log(my_data);
 		axios({
 			method: "post",
 			url: "{% url 'save_similarities' %}",
@@ -435,8 +468,8 @@
             if (response.data.status === "ok") 
                 finish_button.innerHTML = "Processo concluído com sucesso!";
                 setTimeout(function() {
-                  location.reload();
-                }, 4000); 
+                  window.location.href = "{% url 'infos' %}";
+                }, 2000); 
         })
         .catch(error => {
             console.error(error);

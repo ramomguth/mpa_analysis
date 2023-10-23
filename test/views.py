@@ -175,8 +175,10 @@ def create_project(request):
     
     nome = request.POST['nome']
     descricao = request.POST['descricao']
+    if not descricao: 
+        descricao = ""
     user_id = request.session['user_id']
-    if (nome and descricao and user_id):
+    if (nome and user_id):
         try:
             driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
             with driver.session() as session:
@@ -194,6 +196,10 @@ def create_project(request):
                 return response
         except Exception as e:
             return (e)
+    else:
+        message = 'Todo projeto precisa de um nome!'
+        redirect_url = reverse('create_project')  
+        return alert_and_redirect(request, message, redirect_url)
    
 
 def set_project(request):
@@ -358,8 +364,7 @@ def similarities(request):
     #return render(request, 'test/similarities.html',{'refs': result})
     return render(request, 'test/similarities.html')
 
-   
- 
+
 def save_similarities(request):
     if (not request.user.is_authenticated):
         return redirect('login_user')

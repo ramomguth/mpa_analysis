@@ -154,17 +154,17 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{% url 'mpa' %}">
-              <span data-feather="bar-chart" class="align-text-bottom"></span>
-              3. Main Path Analysis
+            <a class="nav-link" href="{% url 'infos' %}">
+              <span data-feather="book-open" class="align-text-bottom"></span>
+              3. Rede de citação completa
             </a>
           </li>
           <li class="nav-item">
-              <a class="nav-link" href="{% url 'infos' %}">
-                <span data-feather="book-open" class="align-text-bottom"></span>
-                4. Gráfico Completo
-              </a>
-            </li>
+            <a class="nav-link" href="{% url 'mpa' %}">
+              <span data-feather="bar-chart" class="align-text-bottom"></span>
+              4. Main Path Analysis
+            </a>
+          </li>
         </ul>
       </div>
     </nav>
@@ -173,11 +173,9 @@
         <div class="row"> 
             {% csrf_token %}
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h4>Gráfico Completo</h4>   
+                <h4>Rede de citação completa</h4>   
             </div>
-            
-                <button type="button" class="btn btn-primary col-1 mx-1" style="background-color: seagreen" id="graph">Gerar gráfico</button>
-                <table id="data-table" class="table table-bordered" border="1">
+            <table id="data-table" class="table table-bordered" border="1">
                 </table>
         </div>
 
@@ -189,8 +187,7 @@
 
 
 <script>
-    $("#graph").click(function(){
-        this.style.display = "none";
+    document.addEventListener('DOMContentLoaded', function() {
         getGraphData();
 
         async function getGraphData() {
