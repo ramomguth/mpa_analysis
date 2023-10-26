@@ -1,8 +1,8 @@
 version: '3.8'
 
 services:
-  web:
-    build: .
+  web: 
+    image: registry.codigos.ufsc.br/ramom.giovani.guth/mpa_analysis:latest
     ports:
       - "8000:8000"
     depends_on:
