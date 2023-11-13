@@ -60,7 +60,7 @@ def scrape_sbc_event(url, user_id, project_id):
 	except requests.exceptions.RequestException as e:
 		return ("invalid_url")
 	
-	driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
+	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	try:
 		with driver.session() as session: 
 			tx = session.begin_transaction()
@@ -170,7 +170,7 @@ similarity status:
 	complete
 '''
 def save_scraper_data(lista_trabalhos, user_id, project_id):
-	driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
+	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	try:
 		with driver.session() as session: 
 			tx = session.begin_transaction()
@@ -222,7 +222,7 @@ def string_similarity(str1, str2):
 	return s
 
 def compare_refs(user_id, project_id):
-	driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
+	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	try:
 		with driver.session() as session: 
 			'''
@@ -300,7 +300,7 @@ def compare_refs(user_id, project_id):
 	for str1, str2 in combinations(strings_dict.keys(), 2):
 		similarity = (string_similarity(str1,str2))
 		similarity = round(similarity,3)
-		if similarity > 0.45:
+		if similarity > 0.475:
 			if (strings_dict[str1][0] == 'primario' and strings_dict[str2][0] == 'primario'): continue
 			#print(similarity, str1,"|||", str2)
 			#print(f"Add info for str1: {strings_dict[str1]}")
@@ -325,7 +325,7 @@ def compare_refs(user_id, project_id):
 
 
 def return_simil(user_id, project_id):
-	driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
+	driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
 	with driver.session() as session: 
 		try:
 			q = f"""MATCH (f:simil_flag {{user_id:'{user_id}', project_id:'{project_id}'}}) return f.status"""

@@ -11,6 +11,7 @@ services:
       - NEO4J_URI=bolt://db:7687
     volumes:
       - sqlite_data:/app
+    command: bash -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
 
   db:
     image: neo4j:latest

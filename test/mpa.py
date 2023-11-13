@@ -9,7 +9,7 @@ from collections import defaultdict
 
 
 def save_altered_similarities(main_ref, params, user_id, project_id):
-    driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
+    driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
     """
     nova logica
     1 - com o id da ref a ser alterada, encontrar quem referencia ela
@@ -126,7 +126,7 @@ def save_altered_similarities(main_ref, params, user_id, project_id):
 
 def get_full_graph(user_id, project_id):
     try:
-        driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
+        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
         with driver.session() as session: 
             query = "match (s:trabalho {user_id:$user_id, project_id:$project_id})-[:referencia]->(d:trabalho {user_id:$user_id, project_id:$project_id}) return s.id as source_id, s.title as source_name, d.id as target_id, d.title as target_name" 
             result = session.run(query, user_id=user_id, project_id=project_id)
@@ -215,7 +215,7 @@ def get_full_graph(user_id, project_id):
 
 def make_mpa(tipo, user_id, project_id):
     try:
-        driver = GraphDatabase.driver(uri="bolt://db:7687", auth=("neo4j", "superman"))
+        driver = GraphDatabase.driver(uri="bolt://localhost:7687", auth=("batman", "superman"))
         with driver.session() as session:
             query = "match (s:trabalho {user_id:$user_id, project_id:$project_id})-[:referencia]->(d:trabalho {user_id:$user_id, project_id:$project_id}) return s.id as source_id, s.title as source_name, d.id as target_id, d.title as target_name" 
             result = session.run(query, user_id=user_id, project_id=project_id)
